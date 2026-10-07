@@ -14,14 +14,26 @@
   // Auth Elements
   const authModal = document.getElementById("auth-modal");
   const inputCode = document.getElementById("input-code");
+  const inputServer = document.getElementById("input-server");
+  const serverInputGroup = document.getElementById("server-input-group");
   const btnSubmitCode = document.getElementById("btn-submit-code");
   const authError = document.getElementById("auth-error");
 
-  // Check URL query param or localStorage for code
+  // Check URL query param or localStorage for code & server
   const urlParams = new URLSearchParams(window.location.search);
   let savedCode = urlParams.get("code") || localStorage.getItem("airpad_code") || "";
-  if (savedCode) {
-    inputCode.value = savedCode;
+  let savedServer = urlParams.get("server") || localStorage.getItem("airpad_server") || "";
+
+  if (savedCode) inputCode.value = savedCode;
+  if (savedServer) inputServer.value = savedServer;
+
+  // If running from GitHub Pages or file://, show server URL input
+  const isExternalHost = location.origin.startsWith("file:") || location.host.includes("github.io");
+  if (isExternalHost) {
+    serverInputGroup.style.display = "block";
+    if (!inputServer.value) {
+      inputServer.value = localStorage.getItem("airpad_server") || "victorian-internet-unexpected-license.trycloudflare.com";
+    }
   }
 
   // Service Worker Registration for PWA WebAPK
@@ -83,9 +95,11 @@
   function connect() {
     let host = location.host;
     let proto = "wss:";
-    if (!host || location.origin.startsWith("file:")) {
-      host = localStorage.getItem("airpad_host") || "victorian-internet-unexpected-license.trycloudflare.com";
+    if (isExternalHost) {
+      let raw = inputServer.value.trim().replace(/^https?:\/\//, "").replace(/^wss?:\/\//, "").replace(/\/.*$/, "");
+      host = raw || "victorian-internet-unexpected-license.trycloudflare.com";
       proto = "wss:";
+      localStorage.setItem("airpad_server", host);
     } else {
       proto = location.protocol === "https:" ? "wss:" : "ws:";
     }
