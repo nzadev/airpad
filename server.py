@@ -230,7 +230,11 @@ async def ws_handler(request):
 
 async def index_handler(request):
     static_file = os.path.join(os.path.dirname(__file__), "static", "index.html")
-    return web.FileResponse(static_file)
+    return web.FileResponse(static_file, headers={
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    })
 
 async def dashboard_handler(request):
     dash_file = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
