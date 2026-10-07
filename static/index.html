@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>AirPad - Virtual Gamepad</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <div id="landscape-warning">
+    <div class="warning-box">
+      <div class="rotate-icon">📱 ➔ 🔄</div>
+      <h2>Putar HP ke Mode Landscape</h2>
+      <p>Posisikan HP horizontal untuk mengaktifkan stik controller</p>
+      <button id="btn-force-fs">Buka Fullscreen</button>
+    </div>
+  </div>
+
+  <!-- Pairing Code Screen -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-icon">🎮</div>
+      <h2>Sambungkan Stik AirPad</h2>
+      <p>Masukkan 4 digit kode yang muncul di terminal PC</p>
+      <div class="code-input-wrapper">
+        <input type="tel" id="input-code" maxlength="6" placeholder="KODE" autocomplete="off" autofocus>
+      </div>
+      <div id="auth-error" class="error-text"></div>
+      <button id="btn-submit-code" class="btn-connect">Hubungkan Sekarang</button>
+    </div>
+  </div>
+
+  <div id="gamepad-container">
+    <!-- Top Bar Status -->
+    <header class="top-nav">
+      <div class="status-badge" id="player-badge">
+        <span class="dot"></span>
+        <span id="player-text">Menghubungkan...</span>
+      </div>
+      <div class="center-meta">
+        <span id="ping-text">0 ms</span>
+      </div>
+      <div class="top-actions">
+        <button id="btn-install" class="icon-btn" title="Install Aplikasi" style="display: none;">📥</button>
+        <button id="btn-vibrate" class="icon-btn active" title="Getar">📳</button>
+        <button id="btn-fullscreen" class="icon-btn" title="Layar Penuh">⛶</button>
+      </div>
+    </header>
+
+    <!-- Shoulder Buttons -->
+    <div class="shoulders-bar">
+      <div class="shoulder-group left">
+        <div class="btn-shoulder" data-btn="L2" id="btn-l2">L2</div>
+        <div class="btn-shoulder" data-btn="L1" id="btn-l1">L1</div>
+      </div>
+      <div class="center-buttons">
+        <div class="btn-pill" data-btn="SELECT" id="btn-select">SHARE</div>
+        <div class="btn-ps" data-btn="PS" id="btn-ps">PS</div>
+        <div class="btn-pill" data-btn="START" id="btn-start">OPTIONS</div>
+      </div>
+      <div class="shoulder-group right">
+        <div class="btn-shoulder" data-btn="R1" id="btn-r1">R1</div>
+        <div class="btn-shoulder" data-btn="R2" id="btn-r2">R2</div>
+      </div>
+    </div>
+
+    <!-- Main Gamepad Area -->
+    <main class="controls-grid">
+      <!-- Left Controls: D-Pad & Left Stick -->
+      <section class="control-zone left-zone">
+        <div class="dpad-wrapper">
+          <div class="dpad-btn up" data-btn="UP">▲</div>
+          <div class="dpad-btn left" data-btn="LEFT">◀</div>
+          <div class="dpad-center"></div>
+          <div class="dpad-btn right" data-btn="RIGHT">▶</div>
+          <div class="dpad-btn down" data-btn="DOWN">▼</div>
+        </div>
+
+        <div class="joystick-container" id="left-stick-zone">
+          <div class="joystick-base">
+            <div class="joystick-knob" id="left-knob">L3</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Controls: Right Stick & Action Buttons -->
+      <section class="control-zone right-zone">
+        <div class="joystick-container" id="right-stick-zone">
+          <div class="joystick-base">
+            <div class="joystick-knob" id="right-knob">R3</div>
+          </div>
+        </div>
+
+        <div class="action-wrapper">
+          <div class="action-btn triangle" data-btn="TRIANGLE">▲</div>
+          <div class="action-btn square" data-btn="SQUARE">■</div>
+          <div class="action-btn circle" data-btn="CIRCLE">●</div>
+          <div class="action-btn cross" data-btn="CROSS">✕</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
