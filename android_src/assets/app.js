@@ -1148,6 +1148,10 @@
           break;
         }
       }
+      if (e.touches.length === 0) {
+        this.touchId = null;
+        this.clearAll();
+      }
     }
 
     processPoint(clientX, clientY) {
@@ -1208,7 +1212,7 @@
   // Initialize D-Pad Manager
   new DPadManager();
 
-  // --- ACTION & SHOULDER BUTTONS ENGINE (MULTI-TOUCH + SLIDING) ---
+  // --- ACTION & SHOULDER BUTTONS ENGINE (MULTI-TOUCH + SLIDING + ZERO-STUCK FAILSFE) ---
   const activeBtnTouches = new Map();
 
   function pressButton(btn, touchId) {
@@ -1217,7 +1221,9 @@
     if (!btnName) return;
 
     btn.classList.add("active");
-    activeBtnTouches.set(touchId, btn);
+    if (touchId !== undefined) {
+      activeBtnTouches.set(touchId, btn);
+    }
     haptic(18);
 
     if (btnName === "L2" || btnName === "R2") {
@@ -1246,6 +1252,31 @@
     }
   }
 
+  function releaseTouch(touchId) {
+    if (activeBtnTouches.has(touchId)) {
+      const btn = activeBtnTouches.get(touchId);
+      releaseButton(btn, touchId);
+    }
+  }
+
+  function clearAllActiveButtons() {
+    activeBtnTouches.forEach((btn, touchId) => {
+      releaseButton(btn, touchId);
+    });
+    activeBtnTouches.clear();
+    const allBtns = document.querySelectorAll("[data-btn]:not(.dpad-btn)");
+    allBtns.forEach((btn) => {
+      if (btn.classList.contains("active")) {
+        btn.classList.remove("active");
+        const bName = btn.dataset.btn;
+        if (bName) {
+          send(["b", bName, 0]);
+          if (bName === "L2" || bName === "R2") send(["t", bName, 0.0]);
+        }
+      }
+    });
+  }
+
   const standardButtons = document.querySelectorAll("[data-btn]:not(.dpad-btn)");
   standardButtons.forEach((el) => {
     el.addEventListener("touchstart", (e) => {
@@ -1263,7 +1294,7 @@
       e.stopPropagation();
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        releaseButton(el, touch.identifier);
+        releaseTouch(touch.identifier);
       }
     }, { passive: false });
 
@@ -1272,11 +1303,11 @@
       e.stopPropagation();
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        releaseButton(el, touch.identifier);
+        releaseTouch(touch.identifier);
       }
     }, { passive: false });
 
-    // Desktop mouse fallback (guarded from synthetic touch events)
+    // Desktop mouse fallback
     el.addEventListener("mousedown", (e) => {
       if (window.isEditLayoutMode) return;
       if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
@@ -1296,7 +1327,7 @@
     });
   });
 
-  // Global touchmove to allow smooth sliding between action buttons
+  // Global touchmove with sliding release
   window.addEventListener("touchmove", (e) => {
     if (window.isEditLayoutMode) return;
     for (let i = 0; i < e.changedTouches.length; i++) {
@@ -1306,15 +1337,46 @@
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
         const newBtn = target ? target.closest("[data-btn]:not(.dpad-btn)") : null;
 
-        if (newBtn && newBtn !== currentBtn) {
+        if (newBtn !== currentBtn) {
           releaseButton(currentBtn, touch.identifier);
-          pressButton(newBtn, touch.identifier);
+          if (newBtn) {
+            pressButton(newBtn, touch.identifier);
+          }
         }
       }
     }
   }, { passive: false });
 
-  // --- ZERO-LAG ANALOG STICK ENGINE ---
+  // Global touchend and touchcancel on window to guarantee zero stuck lights
+  window.addEventListener("touchend", (e) => {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      releaseTouch(e.changedTouches[i].identifier);
+    }
+    if (e.touches.length === 0) {
+      clearAllActiveButtons();
+    }
+  }, { passive: false });
+
+  window.addEventListener("touchcancel", (e) => {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      releaseTouch(e.changedTouches[i].identifier);
+    }
+    if (e.touches.length === 0) {
+      clearAllActiveButtons();
+    }
+  }, { passive: false });
+
+  window.addEventListener("blur", () => {
+    clearAllActiveButtons();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) clearAllActiveButtons();
+  });
+
+  // --- ZERO-LAG DUAL ANALOG ENGINE WITH L3/R3 CENTER CLICK ---
+  let leftStickInstance = null;
+  let rightStickInstance = null;
+
   class TouchStick {
     constructor(zoneId, knobId, stickCode) {
       this.zone = document.getElementById(zoneId) || document.getElementById(zoneId.replace("cluster-", "") + "-zone");
@@ -1324,6 +1386,18 @@
       this.maxRadius = 38;
       this.centerX = 0;
       this.centerY = 0;
+      this.currClientX = 0;
+      this.currClientY = 0;
+      this.needsUpdate = false;
+      this.lastSentX = 0;
+      this.lastSentY = 0;
+
+      // Click detection (L3 / R3)
+      this.startX = 0;
+      this.startY = 0;
+      this.startTime = 0;
+      this.hasMovedFar = false;
+      this.lastEndTime = 0;
 
       if (!this.zone || !this.knob) return;
 
@@ -1341,17 +1415,31 @@
         const rect = this.zone.getBoundingClientRect();
         this.centerX = rect.left + rect.width / 2;
         this.centerY = rect.top + rect.height / 2;
+        this.startX = e.clientX;
+        this.startY = e.clientY;
+        this.startTime = Date.now();
+        this.hasMovedFar = false;
         this.knob.style.transition = "none";
-        this.updateStick(e.clientX, e.clientY);
+        this.currClientX = e.clientX;
+        this.currClientY = e.clientY;
+        this.needsUpdate = true;
       });
       window.addEventListener("mousemove", (e) => {
         if (isMouseDown) {
-          this.updateStick(e.clientX, e.clientY);
+          this.currClientX = e.clientX;
+          this.currClientY = e.clientY;
+          if (Math.hypot(e.clientX - this.startX, e.clientY - this.startY) > 12) {
+            this.hasMovedFar = true;
+          }
+          this.needsUpdate = true;
         }
       });
       window.addEventListener("mouseup", (e) => {
         if (isMouseDown) {
           isMouseDown = false;
+          if (!this.hasMovedFar && (Date.now() - this.startTime < 280)) {
+            this.triggerThumbClick();
+          }
           this.resetStick();
         }
       });
@@ -1362,16 +1450,32 @@
       e.preventDefault();
       e.stopPropagation();
       if (this.touchId !== null) return;
-      const touch = e.changedTouches[0];
-      this.touchId = touch.identifier;
 
       const rect = this.zone.getBoundingClientRect();
+      let matchedTouch = null;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.clientX >= rect.left - 15 && t.clientX <= rect.right + 15 &&
+            t.clientY >= rect.top - 15 && t.clientY <= rect.bottom + 15) {
+          matchedTouch = t;
+          break;
+        }
+      }
+      if (!matchedTouch) matchedTouch = e.changedTouches[0];
+      if (!matchedTouch) return;
+
+      this.touchId = matchedTouch.identifier;
       this.centerX = rect.left + rect.width / 2;
       this.centerY = rect.top + rect.height / 2;
+      this.startX = matchedTouch.clientX;
+      this.startY = matchedTouch.clientY;
+      this.startTime = Date.now();
+      this.hasMovedFar = false;
 
-      // 0ms input lag: disable transition when moving
       this.knob.style.transition = "none";
-      this.updateStick(touch.clientX, touch.clientY);
+      this.currClientX = matchedTouch.clientX;
+      this.currClientY = matchedTouch.clientY;
+      this.needsUpdate = true;
       haptic(15);
     }
 
@@ -1381,7 +1485,12 @@
         const touch = e.changedTouches[i];
         if (touch.identifier === this.touchId) {
           e.preventDefault();
-          this.updateStick(touch.clientX, touch.clientY);
+          this.currClientX = touch.clientX;
+          this.currClientY = touch.clientY;
+          if (Math.hypot(touch.clientX - this.startX, touch.clientY - this.startY) > 14) {
+            this.hasMovedFar = true;
+          }
+          this.needsUpdate = true;
           break;
         }
       }
@@ -1392,15 +1501,40 @@
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
         if (touch.identifier === this.touchId) {
+          const now = Date.now();
+          const duration = now - this.startTime;
+          // Tap on stick center = L3/R3 click!
+          if (!this.hasMovedFar && duration < 280) {
+            this.triggerThumbClick();
+          } else if (now - this.lastEndTime < 280) {
+            // Double-tap while moving = L3/R3 click!
+            this.triggerThumbClick();
+          }
+          this.lastEndTime = now;
           this.resetStick();
           break;
         }
       }
     }
 
-    updateStick(clientX, clientY) {
-      let dx = clientX - this.centerX;
-      let dy = clientY - this.centerY;
+    triggerThumbClick() {
+      const btnName = this.stickCode + "3"; // "L3" or "R3"
+      send(["b", btnName, 1]);
+      this.knob.classList.add("clicked");
+      const thumbBtn = document.getElementById(`btn-${btnName.toLowerCase()}`);
+      if (thumbBtn) thumbBtn.classList.add("active");
+      haptic(35);
+
+      setTimeout(() => {
+        send(["b", btnName, 0]);
+        this.knob.classList.remove("clicked");
+        if (thumbBtn) thumbBtn.classList.remove("active");
+      }, 120);
+    }
+
+    flush() {
+      let dx = this.currClientX - this.centerX;
+      let dy = this.currClientY - this.centerY;
       const dist = Math.hypot(dx, dy);
 
       if (dist > this.maxRadius) {
@@ -1425,21 +1559,41 @@
         ny = (ny / mag) * curvedMag;
       }
 
-      send(["a", this.stickCode, nx, ny]);
+      // Only send if delta exceeds threshold to avoid network saturation
+      if (Math.hypot(nx - this.lastSentX, ny - this.lastSentY) >= 0.005) {
+        this.lastSentX = nx;
+        this.lastSentY = ny;
+        send(["a", this.stickCode, nx, ny]);
+      }
+      this.needsUpdate = false;
     }
 
     resetStick() {
       this.touchId = null;
-      // Spring snap-back transition
+      this.needsUpdate = false;
+      this.lastSentX = 0;
+      this.lastSentY = 0;
       this.knob.style.transition = "transform 0.12s cubic-bezier(0.18, 0.89, 0.32, 1.28)";
       this.knob.style.transform = "translate(0px, 0px)";
       send(["a", this.stickCode, 0, 0]);
     }
   }
 
+  // Synchronized RequestAnimationFrame Loop for Dual Sticks
+  function renderDualSticks() {
+    if (leftStickInstance && leftStickInstance.needsUpdate) {
+      leftStickInstance.flush();
+    }
+    if (rightStickInstance && rightStickInstance.needsUpdate) {
+      rightStickInstance.flush();
+    }
+    requestAnimationFrame(renderDualSticks);
+  }
+  requestAnimationFrame(renderDualSticks);
+
   // Initialize Analog Sticks
-  new TouchStick("cluster-lstick", "left-knob", "L");
-  new TouchStick("cluster-rstick", "right-knob", "R");
+  leftStickInstance = new TouchStick("cluster-lstick", "left-knob", "L");
+  rightStickInstance = new TouchStick("cluster-rstick", "right-knob", "R");
 
   // Initialize Draggable Clusters & Load Saved Settings / Layout
   initClusterDraggable();

@@ -10,7 +10,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>AirPad - Virtual Gamepad</title>
-  <link rel="stylesheet" href="style.css?v=2.4">
+  <link rel="stylesheet" href="style.css?v=2.5">
   <link rel="manifest" href="manifest.json">
   <script>
     document.documentElement.classList.add("is-native-app");
@@ -146,6 +146,7 @@
         </div>
 
         <div class="joystick-container" id="cluster-lstick">
+          <div class="btn-thumb-click" data-btn="L3" id="btn-l3" title="Klik Analog Kiri (L3)">L3</div>
           <div class="joystick-base">
             <div class="joystick-knob" id="left-knob">L3</div>
           </div>
@@ -155,6 +156,7 @@
       <!-- Right Controls: Right Stick & Action Buttons -->
       <section class="control-zone right-zone">
         <div class="joystick-container" id="cluster-rstick">
+          <div class="btn-thumb-click" data-btn="R3" id="btn-r3" title="Klik Analog Kanan (R3)">R3</div>
           <div class="joystick-base">
             <div class="joystick-knob" id="right-knob">R3</div>
           </div>
@@ -262,6 +264,6 @@
   </div>
 
   <script src="jsqr.min.js"></script>
-  <script src="app.js?v=2.4"></script>
+  <script src="app.js?v=2.5"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'airpad-v2.4';
+const CACHE_NAME = 'airpad-v2.5';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
