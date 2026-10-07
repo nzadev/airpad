@@ -33,6 +33,21 @@
   // Auth & Navigation Elements
   const authModal = document.getElementById("auth-modal");
   const modalCloseBtn = document.getElementById("modal-close-btn");
+  const fullscreenRestoreHud = document.getElementById("fullscreen-restore-hud");
+
+  function isFullscreenActive() {
+    return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function updateFullscreenRestoreHud() {
+    if (!fullscreenRestoreHud) return;
+    const isGamepadActive = authModal && authModal.classList.contains("hidden");
+    if (isGamepadActive && !isFullscreenActive()) {
+      fullscreenRestoreHud.classList.remove("hidden");
+    } else {
+      fullscreenRestoreHud.classList.add("hidden");
+    }
+  }
 
   let authModalOpenTime = Date.now();
   function showAuthModal() {
@@ -40,6 +55,11 @@
     authModalOpenTime = Date.now();
     authModal.style.pointerEvents = "none";
     authModal.classList.remove("hidden");
+    document.body.classList.add("auth-active");
+    if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock().catch(() => {});
+    }
+    updateFullscreenRestoreHud();
     setTimeout(() => {
       if (authModal) authModal.style.pointerEvents = "";
     }, 350);
@@ -48,6 +68,8 @@
   function hideAuthModal() {
     if (!authModal) return;
     authModal.classList.add("hidden");
+    document.body.classList.remove("auth-active");
+    updateFullscreenRestoreHud();
   }
   const modalTabs = document.getElementById("modal-tabs");
   const tabBtnConnect = document.getElementById("tab-btn-connect");
@@ -318,7 +340,7 @@
   async function enterFullscreen() {
     try {
       const docEl = document.documentElement;
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (!isFullscreenActive()) {
         if (docEl.requestFullscreen) {
           await docEl.requestFullscreen().catch(() => {});
         } else if (docEl.webkitRequestFullscreen) {
@@ -330,11 +352,12 @@
       }
     } catch (e) {}
     if (document.activeElement) document.activeElement.blur();
+    updateFullscreenRestoreHud();
   }
 
   async function exitFullscreen() {
     try {
-      if (document.fullscreenElement || document.webkitFullscreenElement) {
+      if (isFullscreenActive()) {
         if (document.exitFullscreen) {
           await document.exitFullscreen().catch(() => {});
         } else if (document.webkitExitFullscreen) {
@@ -345,6 +368,42 @@
         screen.orientation.unlock();
       }
     } catch (e) {}
+    updateFullscreenRestoreHud();
+  }
+
+  function onFullscreenChanged() {
+    updateFullscreenRestoreHud();
+    if (!isFullscreenActive()) {
+      if (authModal && !authModal.classList.contains("hidden")) {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock().catch(() => {});
+        }
+      }
+    } else {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock("landscape").catch(() => {});
+      }
+    }
+  }
+
+  document.addEventListener("fullscreenchange", onFullscreenChanged);
+  document.addEventListener("webkitfullscreenchange", onFullscreenChanged);
+
+  if (fullscreenRestoreHud) {
+    addTapListener(fullscreenRestoreHud, (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      enterFullscreen();
+    });
+  }
+
+  const gamepadContainerEl = document.getElementById("gamepad-container");
+  if (gamepadContainerEl) {
+    gamepadContainerEl.addEventListener("pointerdown", () => {
+      const isGamepadActive = authModal && authModal.classList.contains("hidden");
+      if (isGamepadActive && !isFullscreenActive()) {
+        enterFullscreen();
+      }
+    }, { capture: true, passive: true });
   }
 
   window.addEventListener("orientationchange", () => {
@@ -353,6 +412,7 @@
     }
     setTimeout(() => {
       window.scrollTo(0, 0);
+      updateFullscreenRestoreHud();
     }, 150);
   });
 
@@ -574,7 +634,11 @@
       const pos = layoutMap[id];
       const x = pos && typeof pos.x === "number" ? pos.x : 0;
       const y = pos && typeof pos.y === "number" ? pos.y : 0;
-      el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${currentScale})`;
+      if (x !== 0 || y !== 0 || currentScale !== 1.0) {
+        el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${currentScale})`;
+      } else {
+        el.style.transform = "";
+      }
     });
   }
 
@@ -1548,6 +1612,20 @@
       clearAllActiveButtons();
       if (actionManagerInstance) actionManagerInstance.clearAll();
       if (dpadManagerInstance) dpadManagerInstance.clearAll();
+      if (leftStickInstance) leftStickInstance.reset();
+      if (rightStickInstance) rightStickInstance.reset();
+    } else {
+      const isGamepadActive = authModal && authModal.classList.contains("hidden");
+      if (isGamepadActive) {
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock("landscape").catch(() => {});
+        }
+        updateFullscreenRestoreHud();
+      } else {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock().catch(() => {});
+        }
+      }
     }
   });
 

@@ -1550,8 +1550,70 @@ body, html {
   }
 }
 
-/* Adaptive Portrait Mode Fallback (If user chooses portrait or narrow window) */
-@media (orientation: portrait), (max-width: 650px) {
+/* Ultra-compact Scaling for Non-Fullscreen Landscape (when address bar is visible) */
+@media (orientation: landscape) and (max-height: 310px) {
+  #gamepad-container {
+    padding: 2px 8px;
+  }
+  .top-nav {
+    height: 24px;
+    padding: 0 6px;
+  }
+  .status-badge {
+    padding: 2px 8px;
+    font-size: 11px;
+  }
+  .icon-btn-pill {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  .center-meta {
+    gap: 8px;
+    font-size: 11px;
+  }
+  .shoulders-bar {
+    margin-top: 1px;
+    padding: 0 4px;
+  }
+  .btn-shoulder {
+    width: 58px;
+    height: 30px;
+    font-size: 10px;
+  }
+  .btn-shoulder[data-btn="L2"],
+  .btn-shoulder[data-btn="R2"] {
+    height: 34px;
+  }
+  .btn-ps {
+    width: 30px;
+    height: 30px;
+    font-size: 10px;
+  }
+  .btn-pill {
+    padding: 3px 8px;
+    font-size: 9px;
+  }
+  .controls-grid {
+    padding: 2px 6px;
+  }
+  .control-zone {
+    gap: 10px;
+  }
+  .dpad-wrapper {
+    transform: scale(0.74);
+    transform-origin: left center;
+  }
+  .joystick-container {
+    transform: scale(0.74);
+  }
+  .action-wrapper {
+    transform: scale(0.74);
+    transform-origin: right center;
+  }
+}
+
+/* Adaptive Portrait Mode Fallback (Strictly portrait only, never landscape) */
+@media (orientation: portrait) {
   .controls-grid {
     justify-content: space-between;
     padding: 4px 8px;
@@ -1568,6 +1630,94 @@ body, html {
   }
   .action-wrapper {
     transform: scale(0.85);
+  }
+}
+
+/* Fullscreen Restore Floating HUD */
+.fullscreen-restore-hud {
+  position: fixed;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.92), rgba(14, 116, 144, 0.92));
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #ffffff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55), 0 0 12px rgba(56, 189, 248, 0.25);
+  cursor: pointer;
+  z-index: 500;
+  animation: pulseRestoreHud 2s infinite ease-in-out;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.fullscreen-restore-hud .hud-icon {
+  font-size: 14px;
+}
+
+.fullscreen-restore-hud.hidden {
+  display: none !important;
+}
+
+@keyframes pulseRestoreHud {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.95; }
+  50% { transform: translateX(-50%) scale(1.04); opacity: 1; }
+}
+
+/* Rotate Device Guard (Shown when device is held in portrait while on Gamepad) */
+.rotate-device-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(10, 11, 18, 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.rotate-phone-anim {
+  font-size: 54px;
+  animation: rotatePhoneAnim 2s ease-in-out infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes rotatePhoneAnim {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.rotate-device-overlay h3 {
+  font-size: 20px;
+  color: #f8fafc;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.rotate-device-overlay p {
+  font-size: 13px;
+  color: #94a3b8;
+  max-width: 320px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Only display rotate overlay when on Gamepad (auth modal hidden) AND in portrait */
+@media (orientation: portrait) {
+  body:not(.auth-active) .rotate-device-overlay {
+    display: flex;
   }
 }
 

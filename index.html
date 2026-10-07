@@ -10,10 +10,10 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>AirPad - Virtual Gamepad</title>
-  <link rel="stylesheet" href="style.css?v=2.6">
+  <link rel="stylesheet" href="style.css?v=2.7">
   <link rel="manifest" href="manifest.json">
 </head>
-<body>
+<body class="auth-active">
 
   <!-- In-App Camera QR Scanner Modal -->
   <div id="qr-scanner-modal" class="scanner-modal hidden">
@@ -325,7 +325,20 @@
     </div>
   </div>
 
+  <!-- Floating Fullscreen Restore Indicator (Shown when browser drops fullscreen) -->
+  <div id="fullscreen-restore-hud" class="fullscreen-restore-hud hidden">
+    <span class="hud-icon">⛶</span>
+    <span>Tap Layar untuk Fullscreen</span>
+  </div>
+
+  <!-- Rotate Device Guard (Shown if phone is held in portrait while on gamepad) -->
+  <div id="rotate-device-overlay" class="rotate-device-overlay">
+    <div class="rotate-phone-anim">📱</div>
+    <h3>Putar HP ke Landscape</h3>
+    <p>Gamepad AirPad dirancang dalam posisi horizontal (landscape) agar tombol pas di tangan.</p>
+  </div>
+
   <script src="jsqr.min.js"></script>
-  <script src="app.js?v=2.6"></script>
+  <script src="app.js?v=2.7"></script>
 </body>
 </html>
