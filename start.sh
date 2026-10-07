@@ -50,6 +50,8 @@ if [[ -n "$SERVER_HOST" ]]; then
     printf '{"server":"%s","local_ip":"%s:%s","code":"%s"}\n' "$SERVER_HOST" "$LOCAL_IP" "$PORT" "$AIRPAD_CODE" > "$SCRIPT_DIR/config.json"
     cp "$SCRIPT_DIR/config.json" "$SCRIPT_DIR/static/config.json" 2>/dev/null || true
     cp "$SCRIPT_DIR/config.json" "$SCRIPT_DIR/android_src/assets/config.json" 2>/dev/null || true
+    qrencode -o "$SCRIPT_DIR/static/qr_connect.png" -s 8 -m 2 "$APP_URL" 2>/dev/null || true
+    cp "$SCRIPT_DIR/static/qr_connect.png" "$SCRIPT_DIR/qr_connect.png" 2>/dev/null || true
     echo ">> Sinkronisasi host tunnel ke GitHub..."
     (
         cd "$SCRIPT_DIR"

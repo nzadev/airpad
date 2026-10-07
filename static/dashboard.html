@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AirPad - Server Dashboard</title>
+  <link rel="icon" type="image/png" href="app_icon.png">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: #090b14;
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .header-bar {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
+    }
+
+    .brand-text h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .server-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #4ade80;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 10px #22c55e;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: linear-gradient(165deg, #131728 0%, #0c0f1a 100%);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qr-container {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.15);
+      margin: 0 auto;
+      max-width: 240px;
+      width: 100%;
+    }
+
+    .qr-tabs {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .qr-tab-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(30, 41, 59, 0.6);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .qr-tab-btn:hover {
+      color: #f1f5f9;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .qr-tab-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    .qr-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .code-hero {
+      text-align: center;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1.5px solid rgba(56, 189, 248, 0.3);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .code-hero-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .code-hero-val {
+      font-size: 40px;
+      font-weight: 900;
+      letter-spacing: 12px;
+      color: #38bdf8;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+    }
+
+    .url-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .url-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      gap: 10px;
+    }
+
+    .url-item span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #94a3b8;
+    }
+
+    .btn-copy {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover {
+      background: rgba(56, 189, 248, 0.3);
+      color: #fff;
+    }
+
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .player-slot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 12px 16px;
+      transition: all 0.3s;
+    }
+
+    .player-slot.active {
+      background: linear-gradient(135deg, rgba(30, 58, 138, 0.3) 0%, rgba(3, 105, 161, 0.2) 100%);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.15);
+    }
+
+    .slot-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slot-icon {
+      font-size: 20px;
+    }
+
+    .slot-name {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .slot-status {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .player-slot.active .slot-status {
+      color: #4ade80;
+      font-weight: 600;
+    }
+
+    .log-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .log-box {
+      flex: 1;
+      min-height: 120px;
+      max-height: 160px;
+      background: #060810;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-entry {
+      line-height: 1.4;
+    }
+
+    .log-entry.active {
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div class="brand-group">
+      <img src="app_icon.png" alt="AirPad" class="brand-logo">
+      <div class="brand-text">
+        <h1>AirPad Control Center</h1>
+        <p>Virtual Mobile Gamepad Server</p>
+      </div>
+    </div>
+    <div class="server-status-pill">
+      <span class="status-dot"></span>
+      <span>ONLINE (8080)</span>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Left Column: QR Code & Pairing -->
+    <div class="card">
+      <div class="card-title">📷 SCAN UNTUK KONEK LANGSUNG</div>
+      <div class="qr-tabs">
+        <button id="tab-cloud" class="qr-tab-btn active" onclick="setQrMode('cloud')">🌐 Cloudflare (Publik)</button>
+        <button id="tab-local" class="qr-tab-btn" onclick="setQrMode('local')">🏠 Wi-Fi Lokal (0ms)</button>
+      </div>
+      <div class="qr-container">
+        <img id="qr-img" src="/api/qr?mode=cloud" alt="QR Code" onerror="this.src='qr_connect.png'">
+      </div>
+      <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+        Buka aplikasi <strong>AirPad</strong> di HP lalu tap <strong>[SCAN QR PC]</strong>
+      </p>
+
+      <div class="code-hero">
+        <div class="code-hero-label">KODE PAIRING STIK</div>
+        <div id="code-val" class="code-hero-val">----</div>
+      </div>
+
+      <div class="url-row">
+        <div class="url-item">
+          <span id="tunnel-url">🌐 Cloudflare: Loading...</span>
+          <button class="btn-copy" onclick="copyText('tunnel-url')">Salin</button>
+        </div>
+        <div class="url-item">
+          <span id="local-url">🏠 Wi-Fi Lokal: Loading...</span>
+          <button class="btn-copy" onclick="copyText('local-url')">Salin</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Live Players & Activity -->
+    <div class="card">
+      <div class="card-title">🎮 STIK TERHUBUNG</div>
+      <div class="players-list">
+        <div id="player-1" class="player-slot">
+          <div class="slot-info">
+            <span class="slot-icon">🎮</span>
+            <div>
+              <div class="slot-name">PLAYER 1</div>
+              <div class="slot-status" id="p1-status">Menunggu HP terhubung...</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="player-2" class="player-slot">
+          <div class="slot-info">
+            <span class="slot-icon">🎮</span>
+            <div>
+              <div class="slot-name">PLAYER 2</div>
+              <div class="slot-status" id="p2-status">Menunggu HP terhubung...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="log-card">
+        <div class="card-title" style="font-size: 12px;">⚡ LIVE INPUT MONITOR</div>
+        <div class="log-box" id="log-box">
+          <div class="log-entry">Menunggu stik HP tersambung...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentQrMode = 'cloud';
+    function setQrMode(mode) {
+      currentQrMode = mode;
+      document.getElementById('tab-cloud').classList.toggle('active', mode === 'cloud');
+      document.getElementById('tab-local').classList.toggle('active', mode === 'local');
+      document.getElementById('qr-img').src = `/api/qr?mode=${currentQrMode}&_t=${Date.now()}`;
+    }
+
+    function copyText(elemId) {
+      const text = document.getElementById(elemId).textContent.replace(/^[^:]+:\s*/, "");
+      navigator.clipboard.writeText(text);
+      alert("Tersalin: " + text);
+    }
+
+    async function refreshStatus() {
+      try {
+        const res = await fetch("/api/status");
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById("code-val").textContent = data.code || "----";
+          document.getElementById("tunnel-url").textContent = "🌐 Cloudflare: " + (data.tunnel || "-");
+          document.getElementById("local-url").textContent = "🏠 Wi-Fi Lokal: " + (data.local_ip || "-");
+
+          const p1 = document.getElementById("player-1");
+          const p1s = document.getElementById("p1-status");
+          if (data.players && data.players.includes(1)) {
+            p1.classList.add("active");
+            p1s.textContent = "🟢 Terhubung & Siap Main";
+          } else {
+            p1.classList.remove("active");
+            p1s.textContent = "Menunggu HP terhubung...";
+          }
+
+          const p2 = document.getElementById("player-2");
+          const p2s = document.getElementById("p2-status");
+          if (data.players && data.players.includes(2)) {
+            p2.classList.add("active");
+            p2s.textContent = "🟢 Terhubung & Siap Main";
+          } else {
+            p2.classList.remove("active");
+            p2s.textContent = "Menunggu HP terhubung...";
+          }
+        }
+      } catch (e) {}
+    }
+
+    refreshStatus();
+    setInterval(refreshStatus, 3000);
+
+    // Live Monitor WebSocket
+    try {
+      const wsProto = location.protocol === "https:" ? "wss:" : "ws:";
+      const monitorWs = new WebSocket(`${wsProto}//${location.host}/ws/monitor`);
+      const logBox = document.getElementById("log-box");
+
+      function addLog(msg, active = false) {
+        const entry = document.createElement("div");
+        entry.className = "log-entry" + (active ? " active" : "");
+        const now = new Date().toLocaleTimeString();
+        entry.textContent = `[${now}] ${msg}`;
+        logBox.appendChild(entry);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+
+      monitorWs.onmessage = (event) => {
+        try {
+          const ev = JSON.parse(event.data);
+          if (ev.type === "player_join") {
+            addLog(`🎮 Player ${ev.player} tersambung!`, true);
+            refreshStatus();
+          } else if (ev.type === "player_leave") {
+            addLog(`⚠️ Player ${ev.player} terputus.`);
+            refreshStatus();
+          } else if (ev.type === "input") {
+            if (ev.action === "button") {
+              const state = ev.val === 1 ? "DITEKAN" : "DILEPAS";
+              addLog(`P${ev.player}: ${ev.btn} ${state}`, ev.val === 1);
+            }
+          }
+        } catch (e) {}
+      };
+    } catch (e) {}
+  </script>
+</body>
+</html>

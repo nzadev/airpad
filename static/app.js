@@ -624,78 +624,239 @@
     }
   }
 
-  // --- MULTI-TOUCH BUTTON HANDLER ---
-  const activeButtons = new Map();
+  // --- ULTRA-SMOOTH D-PAD VECTOR ENGINE (8-WAY & FLUID SLIDING) ---
+  class DPadManager {
+    constructor() {
+      this.wrapper = document.querySelector(".dpad-wrapper");
+      if (!this.wrapper) return;
 
-  function handleTouchStart(e) {
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const touch = e.changedTouches[i];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      const btn = target ? target.closest("[data-btn]") : null;
+      this.buttons = {
+        UP: this.wrapper.querySelector('[data-btn="UP"]'),
+        DOWN: this.wrapper.querySelector('[data-btn="DOWN"]'),
+        LEFT: this.wrapper.querySelector('[data-btn="LEFT"]'),
+        RIGHT: this.wrapper.querySelector('[data-btn="RIGHT"]')
+      };
 
-      if (btn) {
-        const btnName = btn.dataset.btn;
-        btn.classList.add("active");
-        activeButtons.set(touch.identifier, btn);
-        haptic(18);
+      this.activeDirs = { UP: false, DOWN: false, LEFT: false, RIGHT: false };
+      this.touchId = null;
 
-        if (btnName === "L2" || btnName === "R2") {
-          send(["t", btnName, 1.0]);
-        } else {
-          send(["b", btnName, 1]);
+      this.wrapper.addEventListener("touchstart", this.onTouchStart.bind(this), { passive: false });
+      window.addEventListener("touchmove", this.onTouchMove.bind(this), { passive: false });
+      window.addEventListener("touchend", this.onTouchEnd.bind(this), { passive: false });
+      window.addEventListener("touchcancel", this.onTouchEnd.bind(this), { passive: false });
+
+      // Desktop Mouse Fallback
+      let isMouseDown = false;
+      this.wrapper.addEventListener("mousedown", (e) => {
+        if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+        isMouseDown = true;
+        this.processPoint(e.clientX, e.clientY);
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (isMouseDown) this.processPoint(e.clientX, e.clientY);
+      });
+      window.addEventListener("mouseup", (e) => {
+        if (isMouseDown) {
+          isMouseDown = false;
+          this.clearAll();
         }
-      }
+      });
     }
-  }
 
-  function handleTouchEnd(e) {
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const touch = e.changedTouches[i];
-      if (activeButtons.has(touch.identifier)) {
-        const btn = activeButtons.get(touch.identifier);
-        const btnName = btn.dataset.btn;
-        btn.classList.remove("active");
-        activeButtons.delete(touch.identifier);
-
-        if (btnName === "L2" || btnName === "R2") {
-          send(["t", btnName, 0.0]);
-        } else {
-          send(["b", btnName, 0]);
-        }
-      }
-    }
-  }
-
-  const allButtons = document.querySelectorAll("[data-btn]");
-  allButtons.forEach((el) => {
-    el.addEventListener("touchstart", handleTouchStart, { passive: false });
-    el.addEventListener("touchend", handleTouchEnd, { passive: false });
-    el.addEventListener("touchcancel", handleTouchEnd, { passive: false });
-
-    // Desktop Mouse Testing Support
-    el.addEventListener("mousedown", (e) => {
+    onTouchStart(e) {
       e.preventDefault();
-      const btnName = el.dataset.btn;
-      el.classList.add("active");
-      if (btnName === "L2" || btnName === "R2") {
-        send(["t", btnName, 1.0]);
-      } else {
-        send(["b", btnName, 1]);
+      e.stopPropagation();
+      if (this.touchId !== null) return;
+      const touch = e.changedTouches[0];
+      this.touchId = touch.identifier;
+      this.processPoint(touch.clientX, touch.clientY);
+    }
+
+    onTouchMove(e) {
+      if (this.touchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === this.touchId) {
+          e.preventDefault();
+          this.processPoint(touch.clientX, touch.clientY);
+          break;
+        }
       }
+    }
+
+    onTouchEnd(e) {
+      if (this.touchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === this.touchId) {
+          this.touchId = null;
+          this.clearAll();
+          break;
+        }
+      }
+    }
+
+    processPoint(clientX, clientY) {
+      const rect = this.wrapper.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const dx = clientX - centerX;
+      const dy = clientY - centerY;
+      const dist = Math.hypot(dx, dy);
+
+      // Deadzone: 14px radius in center
+      const newDirs = { UP: false, DOWN: false, LEFT: false, RIGHT: false };
+      if (dist >= 14) {
+        // Angle in degrees: -180 to 180
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        // 8-Way angular slicing
+        // UP: -157.5 to -22.5
+        if (angle >= -157.5 && angle <= -22.5) newDirs.UP = true;
+        // DOWN: 22.5 to 157.5
+        if (angle >= 22.5 && angle <= 157.5) newDirs.DOWN = true;
+        // RIGHT: -67.5 to 67.5
+        if (angle >= -67.5 && angle <= 67.5) newDirs.RIGHT = true;
+        // LEFT: > 112.5 or < -112.5
+        if (angle >= 112.5 || angle <= -112.5) newDirs.LEFT = true;
+      }
+
+      let stateChanged = false;
+      for (const dir in newDirs) {
+        if (newDirs[dir] !== this.activeDirs[dir]) {
+          stateChanged = true;
+          this.activeDirs[dir] = newDirs[dir];
+          send(["b", dir, newDirs[dir] ? 1 : 0]);
+          if (this.buttons[dir]) {
+            this.buttons[dir].classList.toggle("active", newDirs[dir]);
+          }
+        }
+      }
+      if (stateChanged && dist >= 14) {
+        haptic(16);
+      }
+    }
+
+    clearAll() {
+      for (const dir in this.activeDirs) {
+        if (this.activeDirs[dir]) {
+          this.activeDirs[dir] = false;
+          send(["b", dir, 0]);
+          if (this.buttons[dir]) {
+            this.buttons[dir].classList.remove("active");
+          }
+        }
+      }
+    }
+  }
+
+  // Initialize D-Pad Manager
+  new DPadManager();
+
+  // --- ACTION & SHOULDER BUTTONS ENGINE (MULTI-TOUCH + SLIDING) ---
+  const activeBtnTouches = new Map();
+
+  function pressButton(btn, touchId) {
+    if (!btn) return;
+    const btnName = btn.dataset.btn;
+    if (!btnName) return;
+
+    btn.classList.add("active");
+    activeBtnTouches.set(touchId, btn);
+    haptic(18);
+
+    if (btnName === "L2" || btnName === "R2") {
+      send(["t", btnName, 1.0]);
+      send(["b", btnName, 1]);
+    } else {
+      send(["b", btnName, 1]);
+    }
+  }
+
+  function releaseButton(btn, touchId) {
+    if (!btn) return;
+    const btnName = btn.dataset.btn;
+    if (!btnName) return;
+
+    btn.classList.remove("active");
+    if (touchId !== undefined) {
+      activeBtnTouches.delete(touchId);
+    }
+
+    if (btnName === "L2" || btnName === "R2") {
+      send(["t", btnName, 0.0]);
+      send(["b", btnName, 0]);
+    } else {
+      send(["b", btnName, 0]);
+    }
+  }
+
+  const standardButtons = document.querySelectorAll("[data-btn]:not(.dpad-btn)");
+  standardButtons.forEach((el) => {
+    el.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        pressButton(el, touch.identifier);
+      }
+    }, { passive: false });
+
+    el.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        releaseButton(el, touch.identifier);
+      }
+    }, { passive: false });
+
+    el.addEventListener("touchcancel", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        releaseButton(el, touch.identifier);
+      }
+    }, { passive: false });
+
+    // Desktop mouse fallback (guarded from synthetic touch events)
+    el.addEventListener("mousedown", (e) => {
+      if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+      e.preventDefault();
+      pressButton(el, "mouse_" + el.dataset.btn);
     });
 
-    el.addEventListener("mouseup", () => {
-      const btnName = el.dataset.btn;
-      el.classList.remove("active");
-      if (btnName === "L2" || btnName === "R2") {
-        send(["t", btnName, 0.0]);
-      } else {
-        send(["b", btnName, 0]);
+    el.addEventListener("mouseup", (e) => {
+      if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+      releaseButton(el, "mouse_" + el.dataset.btn);
+    });
+
+    el.addEventListener("mouseleave", (e) => {
+      if (activeBtnTouches.has("mouse_" + el.dataset.btn)) {
+        releaseButton(el, "mouse_" + el.dataset.btn);
       }
     });
   });
 
-  // --- JOYSTICK ANALOG STICK MANAGER ---
+  // Global touchmove to allow smooth sliding between action buttons
+  window.addEventListener("touchmove", (e) => {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      if (activeBtnTouches.has(touch.identifier)) {
+        const currentBtn = activeBtnTouches.get(touch.identifier);
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        const newBtn = target ? target.closest("[data-btn]:not(.dpad-btn)") : null;
+
+        if (newBtn && newBtn !== currentBtn) {
+          releaseButton(currentBtn, touch.identifier);
+          pressButton(newBtn, touch.identifier);
+        }
+      }
+    }
+  }, { passive: false });
+
+  // --- ZERO-LAG ANALOG STICK ENGINE ---
   class TouchStick {
     constructor(zoneId, knobId, stickCode) {
       this.zone = document.getElementById(zoneId);
@@ -712,9 +873,34 @@
       window.addEventListener("touchmove", this.onTouchMove.bind(this), { passive: false });
       window.addEventListener("touchend", this.onTouchEnd.bind(this), { passive: false });
       window.addEventListener("touchcancel", this.onTouchEnd.bind(this), { passive: false });
+
+      // Desktop Mouse Fallback
+      let isMouseDown = false;
+      this.zone.addEventListener("mousedown", (e) => {
+        if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+        isMouseDown = true;
+        const rect = this.zone.getBoundingClientRect();
+        this.centerX = rect.left + rect.width / 2;
+        this.centerY = rect.top + rect.height / 2;
+        this.knob.style.transition = "none";
+        this.updateStick(e.clientX, e.clientY);
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (isMouseDown) {
+          this.updateStick(e.clientX, e.clientY);
+        }
+      });
+      window.addEventListener("mouseup", (e) => {
+        if (isMouseDown) {
+          isMouseDown = false;
+          this.resetStick();
+        }
+      });
     }
 
     onTouchStart(e) {
+      e.preventDefault();
+      e.stopPropagation();
       if (this.touchId !== null) return;
       const touch = e.changedTouches[0];
       this.touchId = touch.identifier;
@@ -723,6 +909,8 @@
       this.centerX = rect.left + rect.width / 2;
       this.centerY = rect.top + rect.height / 2;
 
+      // 0ms input lag: disable transition when moving
+      this.knob.style.transition = "none";
       this.updateStick(touch.clientX, touch.clientY);
       haptic(15);
     }
@@ -732,6 +920,7 @@
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
         if (touch.identifier === this.touchId) {
+          e.preventDefault();
           this.updateStick(touch.clientX, touch.clientY);
           break;
         }
@@ -763,14 +952,26 @@
 
       let nx = dx / this.maxRadius;
       let ny = dy / this.maxRadius;
-      if (Math.abs(nx) < 0.05) nx = 0;
-      if (Math.abs(ny) < 0.05) ny = 0;
+      const mag = Math.hypot(nx, ny);
+
+      // Smooth parabolic deadzone
+      if (mag < 0.08) {
+        nx = 0;
+        ny = 0;
+      } else {
+        const smoothMag = (mag - 0.08) / 0.92;
+        const curvedMag = Math.pow(smoothMag, 1.15);
+        nx = (nx / mag) * curvedMag;
+        ny = (ny / mag) * curvedMag;
+      }
 
       send(["a", this.stickCode, nx, ny]);
     }
 
     resetStick() {
       this.touchId = null;
+      // Spring snap-back transition
+      this.knob.style.transition = "transform 0.12s cubic-bezier(0.18, 0.89, 0.32, 1.28)";
       this.knob.style.transform = "translate(0px, 0px)";
       send(["a", this.stickCode, 0, 0]);
     }
@@ -780,7 +981,7 @@
   new TouchStick("left-stick-zone", "left-knob", "L");
   new TouchStick("right-stick-zone", "right-knob", "R");
 
-  // Prevent default scroll gestures
+  // Prevent default scroll & zoom gestures on the whole viewport
   document.addEventListener("gesturestart", (e) => e.preventDefault());
   document.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
 
