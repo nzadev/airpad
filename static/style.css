@@ -1507,3 +1507,176 @@ body.edit-mode-active [data-draggable-cluster].is-dragging::after {
   background: #10b981;
 }
 
+/* Visual Bounding Walls (Dinding Pembatas) */
+.edit-walls-container {
+  position: absolute;
+  inset: 50px 10px 10px 10px;
+  display: none;
+  pointer-events: none;
+  z-index: 100;
+}
+
+body.edit-mode-active .edit-walls-container {
+  display: flex;
+  justify-content: space-between;
+}
+
+.wall-box {
+  flex: 1;
+  position: relative;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.15);
+  margin: 6px;
+}
+
+.wall-box.wall-left {
+  border: 1.5px dashed rgba(56, 189, 248, 0.4);
+  box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.05);
+}
+
+.wall-box.wall-right {
+  border: 1.5px dashed rgba(168, 85, 247, 0.4);
+  box-shadow: inset 0 0 20px rgba(168, 85, 247, 0.05);
+}
+
+.wall-tag {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.wall-left .wall-tag {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.wall-right .wall-tag {
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.wall-divider {
+  width: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.wall-divider-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #ef4444,
+    #ef4444 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  opacity: 0.6;
+}
+
+.wall-divider-badge {
+  background: #0f172a;
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #f87171;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 4px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+  z-index: 2;
+}
+
+/* Offline Gamepad Preview Button */
+.btn-preview-offline {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  padding: 11px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  touch-action: manipulation !important;
+}
+
+.btn-preview-offline:active {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(0.98);
+}
+
+/* Close Settings Bottom Button */
+.btn-close-settings-bottom {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+  padding: 13px 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+  transition: all 0.15s ease;
+  touch-action: manipulation !important;
+}
+
+.btn-close-settings-bottom:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.97);
+}
+
+/* Native Android APK Specific Overrides */
+body.is-native-app .apk-recommend-banner,
+html.is-native-app .apk-recommend-banner,
+body.is-native-app .modal-tabs,
+html.is-native-app .modal-tabs,
+body.is-native-app #tab-pane-download,
+html.is-native-app #tab-pane-download,
+body.is-native-app #btn-open-download-modal,
+body.is-native-app #landscape-warning {
+  display: none !important;
+}
+
+/* Touch Action Fix for All Buttons & Interactive Overlays */
+.modal-overlay,
+.modal-card,
+button,
+.icon-btn-pill,
+.btn-connect,
+.btn-preview-offline,
+.modal-close-btn,
+.btn-close-settings-bottom,
+.btn-accent-sm,
+.btn-danger-sm,
+.btn-edit-action,
+.scale-btn,
+.toggle-switch,
+.chip-btn,
+.btn-scan-qr {
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+}
+

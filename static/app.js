@@ -62,8 +62,10 @@
   // Detect if running inside the Native Android APK
   const isNativeApp = Boolean(
     location.protocol === "file:" ||
+    window.location.href.startsWith("file:") ||
     navigator.userAgent.includes("AirPadNative") ||
-    window.AirPadBridge
+    window.AirPadBridge ||
+    (window.Android && window.Android.isNative)
   );
 
   const isExternalHost = isNativeApp || location.origin.startsWith("file:") || location.host.includes("github.io");
@@ -73,10 +75,16 @@
 
   // Adjust UI if inside Native App
   if (isNativeApp) {
+    document.body.classList.add("is-native-app");
+    document.documentElement.classList.add("is-native-app");
     if (modalTabs) modalTabs.style.display = "none";
     if (btnOpenDownloadModal) btnOpenDownloadModal.style.display = "none";
     const lw = document.getElementById("landscape-warning");
     if (lw) lw.style.display = "none";
+    const recBanner = document.querySelector(".apk-recommend-banner");
+    if (recBanner) recBanner.style.display = "none";
+    const paneDownload = document.getElementById("tab-pane-download");
+    if (paneDownload) paneDownload.style.display = "none";
   }
 
   // Tab switching logic (for browser mode)
@@ -346,20 +354,79 @@
     haptic([30, 40]);
   }
 
-  if (btnDisconnect) btnDisconnect.addEventListener("click", disconnectDevice);
-  if (btnSettingsDisconnect) btnSettingsDisconnect.addEventListener("click", disconnectDevice);
+  // --- TAP / TOUCH LISTENER HELPER FOR 0MS TOUCH RESPONSE ---
+  function addTapListener(el, callback) {
+    if (!el) return;
+    let touchStarted = false;
+    let startX = 0;
+    let startY = 0;
 
-  // --- SETTINGS MODAL LISTENERS ---
-  if (btnOpenSettings) {
-    btnOpenSettings.addEventListener("click", () => {
-      if (settingsModal) settingsModal.classList.remove("hidden");
-      haptic(20);
+    el.addEventListener("touchstart", (e) => {
+      touchStarted = true;
+      if (e.changedTouches && e.changedTouches[0]) {
+        startX = e.changedTouches[0].clientX;
+        startY = e.changedTouches[0].clientY;
+      }
+    }, { passive: true });
+
+    el.addEventListener("touchend", (e) => {
+      if (touchStarted) {
+        touchStarted = false;
+        if (e.changedTouches && e.changedTouches[0]) {
+          const dx = Math.abs(e.changedTouches[0].clientX - startX);
+          const dy = Math.abs(e.changedTouches[0].clientY - startY);
+          if (dx > 20 || dy > 20) return;
+        }
+        e.preventDefault();
+        callback(e);
+      }
+    }, { passive: false });
+
+    el.addEventListener("click", (e) => {
+      callback(e);
     });
   }
 
-  if (btnCloseSettings) {
-    btnCloseSettings.addEventListener("click", () => {
-      if (settingsModal) settingsModal.classList.add("hidden");
+  // --- SETTINGS MODAL & OUT DEVICE LOGIC ---
+  const btnCloseSettingsBottom = document.getElementById("btn-close-settings-bottom");
+  const btnPreviewGamepad = document.getElementById("btn-preview-gamepad");
+
+  function openSettings() {
+    if (settingsModal) {
+      settingsModal.style.display = "flex";
+      settingsModal.classList.remove("hidden");
+    }
+    haptic(20);
+  }
+
+  function closeSettings() {
+    if (settingsModal) {
+      settingsModal.classList.add("hidden");
+      settingsModal.style.display = "none";
+    }
+    haptic(15);
+  }
+
+  if (btnOpenSettings) addTapListener(btnOpenSettings, openSettings);
+  if (btnCloseSettings) addTapListener(btnCloseSettings, closeSettings);
+  if (btnCloseSettingsBottom) addTapListener(btnCloseSettingsBottom, closeSettings);
+
+  if (settingsModal) {
+    settingsModal.addEventListener("click", (e) => {
+      if (e.target === settingsModal) closeSettings();
+    });
+  }
+
+  if (btnPreviewGamepad) {
+    addTapListener(btnPreviewGamepad, () => {
+      if (authModal) authModal.classList.add("hidden");
+      haptic(25);
+    });
+  }
+
+  if (btnSettingsDisconnect) {
+    addTapListener(btnSettingsDisconnect, () => {
+      disconnectDevice();
     });
   }
 
@@ -372,7 +439,7 @@
   }
 
   scaleBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
+    addTapListener(btn, () => {
       scaleBtns.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       currentScale = parseFloat(btn.dataset.scale) || 1.0;
@@ -383,32 +450,33 @@
   });
 
   if (btnStartEditLayout) {
-    btnStartEditLayout.addEventListener("click", () => {
+    addTapListener(btnStartEditLayout, () => {
+      closeSettings();
       startEditLayout();
     });
   }
 
   if (btnSaveLayout) {
-    btnSaveLayout.addEventListener("click", () => {
+    addTapListener(btnSaveLayout, () => {
       exitEditLayout(true);
       haptic([30, 40]);
     });
   }
 
   if (btnCancelLayout) {
-    btnCancelLayout.addEventListener("click", () => {
+    addTapListener(btnCancelLayout, () => {
       exitEditLayout(false);
       haptic(20);
     });
   }
 
   if (btnResetLayout) {
-    btnResetLayout.addEventListener("click", () => {
+    addTapListener(btnResetLayout, () => {
       resetLayoutToDefault();
     });
   }
 
-  // --- CUSTOM LAYOUT & POSITION ENGINE ---
+  // --- CUSTOM LAYOUT & ZONE BOUNDARY (DINDING PEMBATAS) ENGINE ---
   const CLUSTER_IDS = [
     "cluster-lshoulders",
     "cluster-center",
@@ -462,7 +530,10 @@
   function startEditLayout() {
     window.isEditLayoutMode = true;
     tempLayout = JSON.parse(JSON.stringify(currentLayout));
-    if (settingsModal) settingsModal.classList.add("hidden");
+    if (settingsModal) {
+      settingsModal.classList.add("hidden");
+      settingsModal.style.display = "none";
+    }
     if (editLayoutHud) editLayoutHud.classList.remove("hidden");
     document.body.classList.add("edit-mode-active");
     haptic([30, 40]);
@@ -523,11 +594,43 @@
         let newX = Math.round(initialClusterX + dx);
         let newY = Math.round(initialClusterY + dy);
 
-        // Clamp inside 45% screen width/height so elements can never get lost off-screen
-        const maxW = Math.round(window.innerWidth * 0.45);
-        const maxH = Math.round(window.innerHeight * 0.45);
-        newX = Math.max(-maxW, Math.min(maxW, newX));
-        newY = Math.max(-maxH, Math.min(maxH, newY));
+        // --- DINDING PEMBATAS & ANTI-COLLISION ZONING ---
+        if (id === "cluster-dpad") {
+          // Zona Kiri (D-Pad): Terbatas di sisi kiri, dinding pembatas melarang tabrakan ke stik L3
+          const lstickX = (tempLayout["cluster-lstick"] && tempLayout["cluster-lstick"].x) || 0;
+          const maxRight = Math.min(35, lstickX + 5);
+          newX = Math.max(-65, Math.min(newX, maxRight));
+          newY = Math.max(-45, Math.min(45, newY));
+        } else if (id === "cluster-lstick") {
+          // Zona Kiri (Stik L3): Dilarang tabrakan ke D-Pad dan dilarang melintasi dinding pembatas tengah
+          const dpadX = (tempLayout["cluster-dpad"] && tempLayout["cluster-dpad"].x) || 0;
+          const minLeft = Math.max(-35, dpadX - 5);
+          newX = Math.max(minLeft, Math.min(50, newX));
+          newY = Math.max(-45, Math.min(45, newY));
+        } else if (id === "cluster-rstick") {
+          // Zona Kanan (Stik R3): Dilarang melintasi dinding tengah ke kiri dan dilarang tabrakan ke tombol aksi
+          const actionsX = (tempLayout["cluster-actions"] && tempLayout["cluster-actions"].x) || 0;
+          const maxRight = Math.min(35, actionsX + 5);
+          newX = Math.max(-50, Math.min(newX, maxRight));
+          newY = Math.max(-45, Math.min(45, newY));
+        } else if (id === "cluster-actions") {
+          // Zona Kanan (Tombol Aksi △□○✕): Dilarang tabrakan ke stik R3 dan terbatas di sisi kanan
+          const rstickX = (tempLayout["cluster-rstick"] && tempLayout["cluster-rstick"].x) || 0;
+          const minLeft = Math.max(-35, rstickX - 5);
+          newX = Math.max(minLeft, Math.min(65, newX));
+          newY = Math.max(-45, Math.min(45, newY));
+        } else if (id === "cluster-lshoulders" || id === "cluster-rshoulders") {
+          // Shoulder buttons tetap di zona atas
+          newX = Math.max(-35, Math.min(35, newX));
+          newY = Math.max(-10, Math.min(30, newY));
+        } else if (id === "cluster-center") {
+          // Center buttons (SELECT/START/HOME) tetap di tengah atas
+          newX = Math.max(-40, Math.min(40, newX));
+          newY = Math.max(-10, Math.min(30, newY));
+        } else {
+          newX = Math.max(-50, Math.min(50, newX));
+          newY = Math.max(-40, Math.min(40, newY));
+        }
 
         tempLayout[id] = { x: newX, y: newY };
         el.style.transform = `translate3d(${newX}px, ${newY}px, 0) scale(${currentScale})`;

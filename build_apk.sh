@@ -13,12 +13,22 @@ OUT_APK="$SCRIPT_DIR/AirPad.apk"
 
 echo ">> 0. Syncing web assets to APK assets & static folder..."
 mkdir -p "$SRC_DIR/assets" "$SCRIPT_DIR/static"
-for f in index.html app.js style.css jsqr.min.js config.json manifest.json app_icon.png icon.svg; do
+for f in app.js style.css jsqr.min.js config.json manifest.json app_icon.png icon.svg; do
     if [[ -f "$SCRIPT_DIR/$f" ]]; then
         cp "$SCRIPT_DIR/$f" "$SRC_DIR/assets/$f"
         cp "$SCRIPT_DIR/$f" "$SCRIPT_DIR/static/$f"
     fi
 done
+
+# Website gets standard index.html
+cp "$SCRIPT_DIR/index.html" "$SCRIPT_DIR/static/index.html"
+
+# Android Native App gets android_index.html (without web download banners/tabs)
+if [[ -f "$SCRIPT_DIR/android_index.html" ]]; then
+    cp "$SCRIPT_DIR/android_index.html" "$SRC_DIR/assets/index.html"
+else
+    cp "$SCRIPT_DIR/index.html" "$SRC_DIR/assets/index.html"
+fi
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/compiled_res" "$BUILD_DIR/gen" "$BUILD_DIR/classes"

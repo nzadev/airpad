@@ -75,7 +75,7 @@
             <span class="apk-badge-hot">⚡ 0ms RESMI</span>
             <div class="apk-banner-text">
               <strong>Mau kontrol lebih responsif tanpa lag browser?</strong>
-              <span>Download Aplikasi Resmi AirPad Android (81 KB)</span>
+              <span>Download Aplikasi Resmi AirPad Android (85 KB)</span>
             </div>
           </div>
           <a id="btn-banner-download-apk" href="AirPad.apk" download class="btn-banner-apk">
@@ -125,6 +125,9 @@
             <button id="btn-submit-code" class="btn-connect" type="button">
               ⚡ SAMBUNGKAN SEKARANG
             </button>
+            <button id="btn-preview-gamepad" class="btn-preview-offline" type="button">
+              🎮 Langsung Masuk / Uji Stik
+            </button>
           </div>
         </div>
       </div>
@@ -138,7 +141,7 @@
             <p>Gamepad Virtual Android dengan Custom Layout & Multi-Player</p>
             <div class="specs-badge-row">
               <span class="spec-chip">v2.2 Terbaru</span>
-              <span class="spec-chip">81 KB</span>
+              <span class="spec-chip">85 KB</span>
               <span class="spec-chip">Android 5.0+</span>
             </div>
           </div>
@@ -146,7 +149,7 @@
 
         <a id="btn-primary-download-apk" href="AirPad.apk" download class="btn-apk-download">
           <span style="font-size: 18px;">📥</span>
-          <span>Download AirPad.apk (81 KB)</span>
+          <span>Download AirPad.apk (85 KB)</span>
         </a>
 
         <div class="features-list">
@@ -155,7 +158,7 @@
           <div class="feature-item">⚡ <span>0ms Input Lag & 60 FPS Fluid Motion</span></div>
           <div class="feature-item">📷 <span>Built-in Instant QR Scanner Kamera</span></div>
           <div class="feature-item">👥 <span>Multi-Player Support (1-8 Controller)</span></div>
-          <div class="feature-item">🛡️ <span>Bebas Iklan, Aman & Super Ringan (81 KB)</span></div>
+          <div class="feature-item">🛡️ <span>Bebas Iklan, Aman & Super Ringan (85 KB)</span></div>
         </div>
 
         <div class="qr-section">
@@ -185,10 +188,6 @@
         <button id="btn-open-settings" class="icon-btn-pill" title="Pengaturan & Kustomisasi Tombol" type="button">
           <span>⚙️</span>
           <span class="btn-text-sm">Menu</span>
-        </button>
-        <button id="btn-disconnect" class="icon-btn-pill danger" title="Putus Sambungan / Keluar" type="button">
-          <span>🚪</span>
-          <span class="btn-text-sm">Keluar</span>
         </button>
       </div>
     </header>
@@ -245,6 +244,20 @@
         </div>
       </section>
     </main>
+
+    <!-- Visual Bounding Walls for Edit Mode -->
+    <div id="edit-mode-walls" class="edit-walls-container">
+      <div class="wall-box wall-left">
+        <span class="wall-tag">◀ BATAS ZONA KIRI (DPAD & L3)</span>
+      </div>
+      <div class="wall-divider">
+        <div class="wall-divider-line"></div>
+        <span class="wall-divider-badge">╪ DINDING PEMBATAS ╪</span>
+      </div>
+      <div class="wall-box wall-right">
+        <span class="wall-tag">BATAS ZONA KANAN (AKSI & R3) ▶</span>
+      </div>
+    </div>
   </div>
 
   <!-- Settings & Customization Modal -->
@@ -255,7 +268,7 @@
           <span style="font-size: 20px;">⚙️</span>
           <h3>Pengaturan Gamepad</h3>
         </div>
-        <button id="btn-close-settings" class="modal-close-btn" type="button">✕</button>
+        <button id="btn-close-settings" class="modal-close-btn" type="button" aria-label="Tutup">✕</button>
       </div>
 
       <div class="settings-body">
@@ -288,7 +301,7 @@
         <div class="setting-item action-item">
           <div class="setting-info">
             <strong>✏️ Atur Posisi Tombol (Custom HUD)</strong>
-            <span>Geser letak tombol sesuka lo</span>
+            <span>Geser letak tombol dengan dinding pembatas</span>
           </div>
           <button type="button" id="btn-start-edit-layout" class="btn-accent-sm">
             <span>✏️ Edit Posisi</span>
@@ -305,6 +318,11 @@
             <span>Keluar</span>
           </button>
         </div>
+
+        <!-- Setting Item 5: Close Settings Footer Button -->
+        <button type="button" id="btn-close-settings-bottom" class="btn-close-settings-bottom">
+          ✕ Selesai & Tutup Pengaturan
+        </button>
       </div>
     </div>
   </div>
