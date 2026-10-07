@@ -91,6 +91,13 @@
     });
   }
 
+  // Purge dead/expired server hosts from localStorage
+  const deadServers = ["victorian-internet", "lung-medline", "terminals-generate"];
+  const curSaved = localStorage.getItem("airpad_server");
+  if (curSaved && deadServers.some((d) => curSaved.includes(d))) {
+    localStorage.removeItem("airpad_server");
+  }
+
   // Check URL query parameters (e.g. ?code=1234&server=...)
   const urlParams = new URLSearchParams(window.location.search);
   const paramCode = urlParams.get("code") || localStorage.getItem("airpad_code") || "";
@@ -106,50 +113,54 @@
       .replace(/\/.*$/, "");
   }
 
+  const serverStatusDot = document.getElementById("server-status-dot");
+
   function saveServer(srv) {
     activeServerHost = cleanHost(srv);
     if (activeServerHost) {
       localStorage.setItem("airpad_server", activeServerHost);
       if (inputServer) inputServer.value = activeServerHost;
-      if (serverStatusLabel) serverStatusLabel.textContent = activeServerHost;
+      if (serverStatusDot) {
+        serverStatusDot.style.background = "#22c55e";
+        serverStatusDot.style.boxShadow = "0 0 8px #22c55e";
+      }
+    } else {
+      if (serverStatusDot) {
+        serverStatusDot.style.background = "#eab308";
+        serverStatusDot.style.boxShadow = "0 0 8px #eab308";
+      }
     }
   }
 
-  // Toggle server input drawer
-  if (btnToggleServer && serverInputGroup) {
-    btnToggleServer.addEventListener("click", (e) => {
-      e.preventDefault();
-      const isHidden = serverInputGroup.style.display === "none";
-      serverInputGroup.style.display = isHidden ? "flex" : "none";
-      if (isHidden && inputServer) inputServer.focus();
+  // Keep inputServer synced with activeServerHost
+  if (inputServer) {
+    inputServer.addEventListener("input", () => {
+      saveServer(inputServer.value);
+    });
+    inputServer.addEventListener("change", () => {
+      saveServer(inputServer.value);
     });
   }
 
   if (btnQuickTunnel) {
     btnQuickTunnel.addEventListener("click", () => {
-      if (window.liveTunnelHost) {
-        saveServer(window.liveTunnelHost);
-      } else {
-        const saved = localStorage.getItem("airpad_server");
-        if (saved && saved.includes(".trycloudflare.com")) {
-          saveServer(saved);
-        }
-      }
+      const tunnel = window.liveTunnelHost || "reservations-gauge-safari-brother.trycloudflare.com";
+      saveServer(tunnel);
+      authError.textContent = "Menggunakan Cloudflare Tunnel";
+      authError.style.color = "#38bdf8";
     });
   }
 
   if (btnQuickLocal) {
     btnQuickLocal.addEventListener("click", () => {
-      if (window.lastLocalIp) {
-        saveServer(window.lastLocalIp);
-      } else {
-        const manual = prompt("Masukkan IP PC (Contoh: 192.168.1.15:8080):", "192.168.1.");
-        if (manual) saveServer(manual);
-      }
+      const local = window.lastLocalIp || "10.150.55.154:8080";
+      saveServer(local);
+      authError.textContent = "Menggunakan Wi-Fi Lokal (" + local + ")";
+      authError.style.color = "#22c55e";
     });
   }
 
-  // Server resolution logic
+  // Un-cached Server resolution logic
   async function resolveServerHost() {
     if (paramServer) {
       saveServer(paramServer);
@@ -161,43 +172,64 @@
       return activeServerHost;
     }
 
-    // Try fetching live server from GitHub raw config (updated by start.sh)
+    // 1. Fetch live config via un-cached GitHub API
     if (isExternalHost) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2800);
-        const res = await fetch("https://raw.githubusercontent.com/nzadev/airpad/main/config.json?_t=" + Date.now(), {
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch("https://api.github.com/repos/nzadev/airpad/contents/config.json", {
           signal: controller.signal
         });
         clearTimeout(timeoutId);
 
         if (res.ok) {
-          const cfg = await res.json();
-          if (cfg) {
-            if (cfg.server) {
+          const data = await res.json();
+          if (data && data.content) {
+            const cleanB64 = data.content.replace(/\s/g, "");
+            const decoded = decodeURIComponent(escape(atob(cleanB64)));
+            const cfg = JSON.parse(decoded);
+            if (cfg && cfg.server && !deadServers.some((d) => cfg.server.includes(d))) {
               window.liveTunnelHost = cleanHost(cfg.server);
               saveServer(cfg.server);
+              if (cfg.local_ip) window.lastLocalIp = cleanHost(cfg.local_ip);
+              if (cfg.code && !inputCode.value) inputCode.value = cfg.code;
+              return activeServerHost;
             }
-            if (cfg.local_ip) {
-              window.lastLocalIp = cleanHost(cfg.local_ip);
-            }
-            if (cfg.code && !inputCode.value) {
-              inputCode.value = cfg.code;
-            }
-            return activeServerHost;
           }
         }
       } catch (e) {}
 
-      // Fallback: local asset config.json
+      // 2. Fallback: Query latest commit SHA to bypass Fastly cache
+      try {
+        const resCommit = await fetch("https://api.github.com/repos/nzadev/airpad/commits/main");
+        if (resCommit.ok) {
+          const commitData = await resCommit.json();
+          if (commitData && commitData.sha) {
+            const rawRes = await fetch(`https://raw.githubusercontent.com/nzadev/airpad/${commitData.sha}/config.json`);
+            if (rawRes.ok) {
+              const cfgRaw = await rawRes.json();
+              if (cfgRaw && cfgRaw.server && !deadServers.some((d) => cfgRaw.server.includes(d))) {
+                window.liveTunnelHost = cleanHost(cfgRaw.server);
+                saveServer(cfgRaw.server);
+                if (cfgRaw.local_ip) window.lastLocalIp = cleanHost(cfgRaw.local_ip);
+                if (cfgRaw.code && !inputCode.value) inputCode.value = cfgRaw.code;
+                return activeServerHost;
+              }
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 3. Fallback: local asset config.json
       try {
         const res2 = await fetch("./config.json?_t=" + Date.now());
         if (res2.ok) {
           const cfg2 = await res2.json();
-          if (cfg2 && cfg2.server) {
+          if (cfg2 && cfg2.server && !deadServers.some((d) => cfg2.server.includes(d))) {
             window.liveTunnelHost = cleanHost(cfg2.server);
             saveServer(cfg2.server);
             if (cfg2.local_ip) window.lastLocalIp = cleanHost(cfg2.local_ip);
+            if (cfg2.code && !inputCode.value) inputCode.value = cfg2.code;
             return activeServerHost;
           }
         }
@@ -205,12 +237,13 @@
     }
 
     const saved = localStorage.getItem("airpad_server");
-    if (saved && !saved.includes("victorian-internet") && !saved.includes("lung-medline")) {
+    if (saved && !deadServers.some((d) => saved.includes(d))) {
       saveServer(saved);
       return activeServerHost;
     }
 
-    if (serverStatusLabel) serverStatusLabel.textContent = "Belum Terhubung (Scan QR)";
+    // Default to the current live tunnel if nothing else resolved
+    saveServer("reservations-gauge-safari-brother.trycloudflare.com");
     return activeServerHost;
   }
 
@@ -568,7 +601,7 @@
     authError.textContent = "Menghubungkan ke server...";
     authError.style.color = "#38bdf8";
 
-    if (!activeServerHost && inputServer && inputServer.value.trim()) {
+    if (inputServer && inputServer.value.trim()) {
       saveServer(inputServer.value);
     }
 

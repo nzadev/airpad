@@ -49,12 +49,14 @@ LOCAL_URL="http://$LOCAL_IP:$PORT/?code=$AIRPAD_CODE"
 if [[ -n "$SERVER_HOST" ]]; then
     printf '{"server":"%s","local_ip":"%s:%s","code":"%s"}\n' "$SERVER_HOST" "$LOCAL_IP" "$PORT" "$AIRPAD_CODE" > "$SCRIPT_DIR/config.json"
     cp "$SCRIPT_DIR/config.json" "$SCRIPT_DIR/static/config.json" 2>/dev/null || true
+    cp "$SCRIPT_DIR/config.json" "$SCRIPT_DIR/android_src/assets/config.json" 2>/dev/null || true
+    echo ">> Sinkronisasi host tunnel ke GitHub..."
     (
         cd "$SCRIPT_DIR"
-        git add config.json 2>/dev/null || true
+        git add config.json static/config.json android_src/assets/config.json 2>/dev/null || true
         git commit -m "chore: sync live tunnel host to $SERVER_HOST" 2>/dev/null || true
         git push origin main 2>/dev/null || true
-    ) >/dev/null 2>&1 &
+    ) || true
 fi
 
 echo ""

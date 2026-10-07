@@ -82,25 +82,21 @@
               </div>
             </button>
 
-            <div class="server-status-pill">
-              <span class="pill-dot"></span>
-              <div class="pill-info">
-                <span class="pill-title">Server PC:</span>
-                <span id="server-status-label">Mencari...</span>
+            <div class="server-config-card">
+              <div class="server-pill-row">
+                <span class="pill-dot" id="server-status-dot"></span>
+                <span class="pill-title">Server:</span>
+                <input type="text" id="input-server" class="server-input-field" placeholder="Domain PC / IP:Port" spellcheck="false" autocomplete="off">
               </div>
-              <button id="btn-toggle-server" type="button" title="Atur Server">⚙️</button>
+              <div class="quick-server-chips">
+                <button type="button" id="btn-quick-tunnel" class="chip-btn" title="Konek via Cloudflare (Internet)">🌐 Cloudflare</button>
+                <button type="button" id="btn-quick-local" class="chip-btn" title="Konek via Wi-Fi Lokal (1 Jaringan)">🏠 Wi-Fi Lokal</button>
+              </div>
             </div>
           </div>
 
           <!-- Right Column: Manual Code Input & Submit -->
           <div class="connect-col right-col">
-            <div id="server-input-group" class="server-config-drawer" style="display: none;">
-              <input type="text" id="input-server" placeholder="Host / URL Tunnel PC">
-              <div class="quick-server-chips">
-                <button type="button" id="btn-quick-tunnel" class="chip-btn">🌐 Cloudflare</button>
-                <button type="button" id="btn-quick-local" class="chip-btn">🏠 Wi-Fi Lokal</button>
-              </div>
-            </div>
 
             <div class="code-field-wrapper">
               <label for="input-code">KODE PAIRING (4 DIGIT):</label>
