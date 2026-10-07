@@ -13,6 +13,14 @@
 
   // Auth Elements
   const authModal = document.getElementById("auth-modal");
+  const modalCloseBtn = document.getElementById("modal-close-btn");
+  const tabBtnConnect = document.getElementById("tab-btn-connect");
+  const tabBtnDownload = document.getElementById("tab-btn-download");
+  const tabPaneConnect = document.getElementById("tab-pane-connect");
+  const tabPaneDownload = document.getElementById("tab-pane-download");
+  const btnSwitchToDownload = document.getElementById("btn-switch-to-download");
+  const btnOpenDownloadModal = document.getElementById("btn-open-download-modal");
+
   const inputCode = document.getElementById("input-code");
   const inputServer = document.getElementById("input-server");
   const serverInputGroup = document.getElementById("server-input-group");
@@ -20,6 +28,39 @@
   const btnToggleServer = document.getElementById("btn-toggle-server");
   const btnSubmitCode = document.getElementById("btn-submit-code");
   const authError = document.getElementById("auth-error");
+
+  // Tab switching logic
+  function switchTab(target) {
+    if (target === "download") {
+      tabBtnDownload.classList.add("active");
+      tabBtnConnect.classList.remove("active");
+      tabPaneDownload.classList.add("active");
+      tabPaneConnect.classList.remove("active");
+    } else {
+      tabBtnConnect.classList.add("active");
+      tabBtnDownload.classList.remove("active");
+      tabPaneConnect.classList.add("active");
+      tabPaneDownload.classList.remove("active");
+    }
+  }
+
+  if (tabBtnConnect) tabBtnConnect.addEventListener("click", () => switchTab("connect"));
+  if (tabBtnDownload) tabBtnDownload.addEventListener("click", () => switchTab("download"));
+  if (btnSwitchToDownload) btnSwitchToDownload.addEventListener("click", () => switchTab("download"));
+
+  if (btnOpenDownloadModal) {
+    btnOpenDownloadModal.addEventListener("click", () => {
+      authModal.classList.remove("hidden");
+      switchTab("download");
+      modalCloseBtn.style.display = "flex";
+    });
+  }
+
+  if (modalCloseBtn) {
+    modalCloseBtn.addEventListener("click", () => {
+      authModal.classList.add("hidden");
+    });
+  }
 
   // Clean stale dead tunnels from localStorage
   if (localStorage.getItem("airpad_server") && localStorage.getItem("airpad_server").includes("victorian-internet")) {
@@ -215,6 +256,7 @@
           playerText.textContent = `PLAYER ${playerNum}`;
           playerBadge.classList.add("connected");
           authModal.classList.add("hidden");
+          if (modalCloseBtn) modalCloseBtn.style.display = "flex";
           authError.textContent = "";
           localStorage.setItem("airpad_code", inputCode.value.trim());
           haptic([30, 50, 30]);

@@ -23,29 +23,80 @@
     </div>
   </div>
 
-  <!-- Pairing Code Screen -->
+  <!-- Pairing & Download Modal -->
   <div id="auth-modal" class="modal-overlay">
     <div class="modal-card">
-      <div class="modal-icon">🎮</div>
-      <h2>Sambungkan Stik AirPad</h2>
-      <p>Masukkan 4 digit kode yang muncul di terminal PC</p>
-      <div id="server-input-group" class="code-input-wrapper" style="display: none; margin-bottom: 6px;">
-        <input type="text" id="input-server" placeholder="Host / URL Tunnel PC" style="font-size: 13px; letter-spacing: normal; padding: 8px; font-weight: normal; border-color: #4b5563;">
+      <button id="modal-close-btn" class="modal-close-btn" title="Tutup">✕</button>
+
+      <!-- Segmented Tab Switcher -->
+      <div class="modal-tabs">
+        <button id="tab-btn-connect" class="modal-tab-btn active" type="button">
+          🎮 Sambung Web
+        </button>
+        <button id="tab-btn-download" class="modal-tab-btn" type="button">
+          📥 Download App APK
+        </button>
       </div>
-      <div class="code-input-wrapper">
-        <input type="tel" id="input-code" maxlength="6" placeholder="KODE" autocomplete="off" autofocus>
+
+      <!-- Tab 1: Connect -->
+      <div id="tab-pane-connect" class="tab-pane active">
+        <div class="modal-icon">🎮</div>
+        <h2>Sambungkan Stik AirPad</h2>
+        <p>Masukkan 4 digit kode yang muncul di terminal PC</p>
+        <div id="server-input-group" class="code-input-wrapper" style="display: none; margin-bottom: 6px;">
+          <input type="text" id="input-server" placeholder="Host / URL Tunnel PC" style="font-size: 13px; letter-spacing: normal; padding: 8px; font-weight: normal; border-color: #4b5563;">
+        </div>
+        <div class="code-input-wrapper">
+          <input type="tel" id="input-code" maxlength="6" placeholder="KODE" autocomplete="off" autofocus>
+        </div>
+        <div id="auth-error" class="error-text"></div>
+        <button id="btn-submit-code" class="btn-connect">Hubungkan Sekarang</button>
+        <div id="server-meta" style="font-size: 11px; color: #64748b; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>Server:</span>
+          <span id="server-status-label" style="color: #94a3b8; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Mendeteksi...</span>
+          <button id="btn-toggle-server" type="button" style="background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 11px; padding: 0;">⚙️ Ubah</button>
+        </div>
+        <button id="btn-switch-to-download" type="button" style="background: none; border: none; color: #60a5fa; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+          Mau aplikasi di menu HP? Download APK Android ➔
+        </button>
       </div>
-      <div id="auth-error" class="error-text"></div>
-      <button id="btn-submit-code" class="btn-connect">Hubungkan Sekarang</button>
-      <div id="server-meta" style="font-size: 11px; color: #64748b; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-        <span>Server:</span>
-        <span id="server-status-label" style="color: #94a3b8; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Mendeteksi...</span>
-        <button id="btn-toggle-server" type="button" style="background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 11px; padding: 0;">⚙️ Ubah</button>
-      </div>
-      <div style="margin-top: 10px; border-top: 1px solid #1e293b; padding-top: 10px; width: 100%;">
-        <a href="AirPad.apk" download style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #1e293b; color: #60a5fa; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid #3b82f6;">
-          📥 Download APK Android (AirPad.apk)
+
+      <!-- Tab 2: Download APK -->
+      <div id="tab-pane-download" class="tab-pane">
+        <div class="download-hero">
+          <img src="app_icon.png" alt="AirPad Icon" class="app-icon-img">
+          <div class="app-hero-meta">
+            <h3>AirPad Controller</h3>
+            <p>Native Android Gamepad</p>
+            <div class="specs-badge-row">
+              <span class="spec-chip">v1.0 Release</span>
+              <span class="spec-chip">21 KB</span>
+              <span class="spec-chip">Android 5.0+</span>
+            </div>
+          </div>
+        </div>
+
+        <a id="btn-primary-download-apk" href="AirPad.apk" download class="btn-apk-download">
+          <span style="font-size: 18px;">📥</span>
+          <span>Download AirPad.apk (21 KB)</span>
         </a>
+
+        <div class="features-list">
+          <div class="feature-item">⚡ <span>0ms Input Lag</span></div>
+          <div class="feature-item">🎮 <span>Xbox & PS Layout</span></div>
+          <div class="feature-item">🔄 <span>Sensor Landscape</span></div>
+          <div class="feature-item">🛡️ <span>Bebas Iklan & Ringan</span></div>
+        </div>
+
+        <div class="qr-section">
+          <div class="qr-frame">
+            <img src="qr_apk.svg" alt="QR Code Download" class="qr-img">
+          </div>
+          <div class="qr-desc">
+            <h4>Scan dari Kamera HP</h4>
+            <p>Buka kamera HP lu, arahkan ke QR code ini untuk langsung download APK ke HP.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -61,7 +112,7 @@
         <span id="ping-text">0 ms</span>
       </div>
       <div class="top-actions">
-        <a id="btn-download-apk" href="AirPad.apk" download class="icon-btn" title="Download APK Android" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">📥</a>
+        <button id="btn-open-download-modal" class="icon-btn" title="Menu Download APK" type="button" style="display: flex; align-items: center; justify-content: center;">📥</button>
         <button id="btn-vibrate" class="icon-btn active" title="Getar">📳</button>
         <button id="btn-fullscreen" class="icon-btn" title="Layar Penuh">⛶</button>
       </div>
