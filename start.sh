@@ -44,6 +44,16 @@ SERVER_HOST=$(echo "$PUBLIC_URL" | sed -E 's#^https?://##')
 GITHUB_URL="https://nzadev.github.io/airpad/?code=$AIRPAD_CODE&server=$SERVER_HOST"
 FULL_URL="$PUBLIC_URL/?code=$AIRPAD_CODE"
 
+if [[ -n "$SERVER_HOST" ]]; then
+    printf '{"server":"%s"}\n' "$SERVER_HOST" > "$SCRIPT_DIR/config.json"
+    (
+        cd "$SCRIPT_DIR"
+        git add config.json 2>/dev/null || true
+        git commit -m "chore: sync live tunnel host to $SERVER_HOST" 2>/dev/null || true
+        git push origin main 2>/dev/null || true
+    ) >/dev/null 2>&1 &
+fi
+
 echo ""
 echo "=========================================================="
 echo "🎮 AIRPAD - VIRTUAL GAMEPAD DENGAN KODE PAIRING!"

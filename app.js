@@ -16,24 +16,77 @@
   const inputCode = document.getElementById("input-code");
   const inputServer = document.getElementById("input-server");
   const serverInputGroup = document.getElementById("server-input-group");
+  const serverStatusLabel = document.getElementById("server-status-label");
+  const btnToggleServer = document.getElementById("btn-toggle-server");
   const btnSubmitCode = document.getElementById("btn-submit-code");
   const authError = document.getElementById("auth-error");
 
-  // Check URL query param or localStorage for code & server
+  // Clean stale dead tunnels from localStorage
+  if (localStorage.getItem("airpad_server") && localStorage.getItem("airpad_server").includes("victorian-internet")) {
+    localStorage.removeItem("airpad_server");
+  }
+
+  // Check URL query params
   const urlParams = new URLSearchParams(window.location.search);
-  let savedCode = urlParams.get("code") || localStorage.getItem("airpad_code") || "";
-  let savedServer = urlParams.get("server") || localStorage.getItem("airpad_server") || "";
+  const paramCode = urlParams.get("code") || localStorage.getItem("airpad_code") || "";
+  const paramServer = urlParams.get("server") || "";
 
-  if (savedCode) inputCode.value = savedCode;
-  if (savedServer) inputServer.value = savedServer;
+  if (paramCode) inputCode.value = paramCode;
 
-  // If running from GitHub Pages or file://, show server URL input
+  // Toggle server input manually if needed
+  if (btnToggleServer && serverInputGroup) {
+    btnToggleServer.addEventListener("click", (e) => {
+      e.preventDefault();
+      const isHidden = serverInputGroup.style.display === "none";
+      serverInputGroup.style.display = isHidden ? "block" : "none";
+      if (isHidden) inputServer.focus();
+    });
+  }
+
   const isExternalHost = location.origin.startsWith("file:") || location.host.includes("github.io");
-  if (isExternalHost) {
-    serverInputGroup.style.display = "block";
-    if (!inputServer.value) {
-      inputServer.value = localStorage.getItem("airpad_server") || "victorian-internet-unexpected-license.trycloudflare.com";
+  let activeServerHost = "";
+
+  async function resolveServerHost() {
+    if (paramServer) {
+      activeServerHost = paramServer.trim().replace(/^https?:\/\//, "").replace(/^wss?:\/\//, "").replace(/\/.*$/, "");
+      inputServer.value = activeServerHost;
+      localStorage.setItem("airpad_server", activeServerHost);
+      if (serverStatusLabel) serverStatusLabel.textContent = activeServerHost;
+      return activeServerHost;
     }
+
+    if (isExternalHost) {
+      try {
+        const res = await fetch("./config.json?_t=" + Date.now());
+        if (res.ok) {
+          const cfg = await res.json();
+          if (cfg && cfg.server) {
+            activeServerHost = cfg.server.trim();
+            inputServer.value = activeServerHost;
+            localStorage.setItem("airpad_server", activeServerHost);
+            if (serverStatusLabel) serverStatusLabel.textContent = activeServerHost;
+            return activeServerHost;
+          }
+        }
+      } catch (e) {}
+    }
+
+    const saved = localStorage.getItem("airpad_server");
+    if (saved && !saved.includes("victorian-internet")) {
+      activeServerHost = saved;
+      inputServer.value = activeServerHost;
+      if (serverStatusLabel) serverStatusLabel.textContent = activeServerHost;
+      return activeServerHost;
+    }
+
+    if (isExternalHost) {
+      activeServerHost = "terminals-generate-undo-kirk.trycloudflare.com";
+    } else {
+      activeServerHost = location.host;
+    }
+    inputServer.value = activeServerHost;
+    if (serverStatusLabel) serverStatusLabel.textContent = activeServerHost;
+    return activeServerHost;
   }
 
   // Service Worker Registration for PWA WebAPK
@@ -92,35 +145,57 @@
   btnForceFs.addEventListener("click", enterFullscreen);
 
   // WebSocket Connection
+  let connectionTimeout = null;
+
   function connect() {
-    let host = location.host;
-    let proto = "wss:";
-    if (isExternalHost) {
-      let raw = inputServer.value.trim().replace(/^https?:\/\//, "").replace(/^wss?:\/\//, "").replace(/\/.*$/, "");
-      host = raw || "victorian-internet-unexpected-license.trycloudflare.com";
-      proto = "wss:";
-      localStorage.setItem("airpad_server", host);
-    } else {
-      proto = location.protocol === "https:" ? "wss:" : "ws:";
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+      const codeToSend = inputCode.value.trim();
+      if (codeToSend && ws.readyState === WebSocket.OPEN) {
+        sendAuth(codeToSend);
+      }
+      return;
     }
 
+    let host = activeServerHost || location.host;
+    if (inputServer.value.trim()) {
+      host = inputServer.value.trim().replace(/^https?:\/\//, "").replace(/^wss?:\/\//, "").replace(/\/.*$/, "");
+    }
+    const proto = (isExternalHost || location.protocol === "https:") ? "wss:" : "ws:";
     const url = `${proto}//${host}/ws`;
 
+    if (serverStatusLabel) serverStatusLabel.textContent = host;
     playerText.textContent = "Menghubungkan...";
     playerBadge.classList.remove("connected");
+
+    if (connectionTimeout) clearTimeout(connectionTimeout);
+    connectionTimeout = setTimeout(() => {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        if (!authModal.classList.contains("hidden")) {
+          authError.textContent = "Gagal terhubung ke PC! Pastikan server PC aktif.";
+          authError.style.color = "#ef4444";
+        }
+      }
+    }, 6000);
 
     try {
       ws = new WebSocket(url);
     } catch (e) {
+      if (connectionTimeout) clearTimeout(connectionTimeout);
       authError.textContent = "Gagal menghubungi server!";
+      authError.style.color = "#ef4444";
       return;
     }
 
     ws.onopen = () => {
-      // If code is ready, send auth immediately
+      if (connectionTimeout) clearTimeout(connectionTimeout);
+      playerText.textContent = "Server Terhubung";
       const codeToSend = inputCode.value.trim();
       if (codeToSend) {
+        authError.textContent = "Memverifikasi kode...";
+        authError.style.color = "#3b82f6";
         sendAuth(codeToSend);
+      } else {
+        authError.textContent = "";
       }
     };
 
@@ -136,7 +211,6 @@
           localStorage.setItem("airpad_code", inputCode.value.trim());
           haptic([30, 50, 30]);
 
-          // Start ping loop
           if (pingInterval) clearInterval(pingInterval);
           pingInterval = setInterval(() => {
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -146,6 +220,7 @@
 
         } else if (data.type === "error") {
           authError.textContent = data.message || "Kode salah!";
+          authError.style.color = "#ef4444";
           authModal.classList.remove("hidden");
           haptic([50, 100, 50]);
 
@@ -157,14 +232,30 @@
     };
 
     ws.onclose = () => {
+      if (connectionTimeout) clearTimeout(connectionTimeout);
       playerText.textContent = "Terputus (Reconnect...)";
       playerBadge.classList.remove("connected");
       if (pingInterval) clearInterval(pingInterval);
-      setTimeout(connect, 1500);
+
+      if (!authModal.classList.contains("hidden")) {
+        authError.textContent = "Koneksi terputus ke server PC.";
+        authError.style.color = "#ef4444";
+      }
+
+      setTimeout(() => {
+        if (playerNum !== null) {
+          connect();
+        }
+      }, 2000);
     };
 
     ws.onerror = () => {
-      ws.close();
+      if (connectionTimeout) clearTimeout(connectionTimeout);
+      if (!authModal.classList.contains("hidden")) {
+        authError.textContent = "Gagal terhubung ke PC! Pastikan server PC aktif.";
+        authError.style.color = "#ef4444";
+      }
+      try { ws.close(); } catch (e) {}
     };
   }
 
@@ -178,9 +269,11 @@
     const code = inputCode.value.trim();
     if (!code) {
       authError.textContent = "Masukkan kode terlebih dahulu!";
+      authError.style.color = "#ef4444";
       return;
     }
-    authError.textContent = "Memverifikasi...";
+    authError.textContent = "Menghubungkan...";
+    authError.style.color = "#3b82f6";
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       connect();
     } else {
@@ -360,5 +453,10 @@
   document.addEventListener("gesturestart", (e) => e.preventDefault());
   document.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
 
-  connect();
+  // Initialize server configuration and auto-connect
+  resolveServerHost().then(() => {
+    if (paramCode) {
+      connect();
+    }
+  });
 })();
