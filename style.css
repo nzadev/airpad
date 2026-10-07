@@ -98,24 +98,30 @@ body, html {
   top: 14px;
   right: 14px;
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #cbd5e1;
-  width: 32px;
-  height: 32px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  color: #e2e8f0;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
   z-index: 10;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
+  touch-action: manipulation !important;
 }
 
 .modal-close-btn:hover {
   background: rgba(255, 255, 255, 0.25);
   color: #fff;
+}
+
+.modal-close-btn:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 /* Modal Segmented Tabs */
