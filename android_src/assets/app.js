@@ -7,7 +7,6 @@
   const playerBadge = document.getElementById("player-badge");
   const playerText = document.getElementById("player-text");
   const pingText = document.getElementById("ping-text");
-  const btnForceFs = document.getElementById("btn-force-fs");
   const btnOpenSettings = document.getElementById("btn-open-settings");
   const btnDisconnect = document.getElementById("btn-disconnect");
 
@@ -79,8 +78,6 @@
     document.documentElement.classList.add("is-native-app");
     if (modalTabs) modalTabs.style.display = "none";
     if (btnOpenDownloadModal) btnOpenDownloadModal.style.display = "none";
-    const lw = document.getElementById("landscape-warning");
-    if (lw) lw.style.display = "none";
     const recBanner = document.querySelector(".apk-recommend-banner");
     if (recBanner) recBanner.style.display = "none";
     const paneDownload = document.getElementById("tab-pane-download");
@@ -143,14 +140,6 @@
 
   if (paramDownload && !isNativeApp) {
     switchTab("download");
-    setTimeout(() => {
-      const dlLink = document.createElement("a");
-      dlLink.href = "AirPad.apk";
-      dlLink.download = "AirPad.apk";
-      document.body.appendChild(dlLink);
-      dlLink.click();
-      document.body.removeChild(dlLink);
-    }, 450);
   }
 
   function cleanHost(str) {
@@ -309,21 +298,23 @@
     }
   }
 
-  // Fullscreen Helper (Used by landscape prompt)
+  // Fullscreen & Orientation Helper
   async function enterFullscreen() {
     try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen().catch(() => {});
+      const docEl = document.documentElement;
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (docEl.requestFullscreen) {
+          await docEl.requestFullscreen().catch(() => {});
+        } else if (docEl.webkitRequestFullscreen) {
+          docEl.webkitRequestFullscreen();
+        }
       }
       if (screen.orientation && screen.orientation.lock) {
         await screen.orientation.lock("landscape").catch(() => {});
       }
     } catch (e) {}
-    if (landscapeWarning) landscapeWarning.style.display = "none";
     if (document.activeElement) document.activeElement.blur();
   }
-
-  if (btnForceFs) btnForceFs.addEventListener("click", enterFullscreen);
 
   window.addEventListener("orientationchange", () => {
     if (document.activeElement && document.activeElement.tagName === "INPUT") {
@@ -332,12 +323,6 @@
     setTimeout(() => {
       window.scrollTo(0, 0);
     }, 150);
-  });
-
-  window.addEventListener("resize", () => {
-    if (window.innerWidth > window.innerHeight) {
-      if (landscapeWarning) landscapeWarning.style.display = "none";
-    }
   });
 
   // --- OUT DEVICE / DISCONNECT CONTROLLER ---
@@ -438,6 +423,7 @@
     addTapListener(btnPreviewGamepad, () => {
       if (document.activeElement) document.activeElement.blur();
       if (authModal) authModal.classList.add("hidden");
+      enterFullscreen();
       haptic(25);
     });
   }
@@ -697,13 +683,7 @@
     });
   }
 
-  const btnIgnorePortrait = document.getElementById("btn-ignore-portrait");
-  const landscapeWarning = document.getElementById("landscape-warning");
-  if (btnIgnorePortrait && landscapeWarning) {
-    btnIgnorePortrait.addEventListener("click", () => {
-      landscapeWarning.style.display = "none";
-    });
-  }
+
 
   // --- IN-APP CAMERA QR SCANNER ---
   let qrScannerStream = null;
@@ -948,6 +928,7 @@
           playerText.textContent = `PLAYER ${playerNum}`;
           playerBadge.classList.add("connected");
           authModal.classList.add("hidden");
+          enterFullscreen();
           if (modalCloseBtn) modalCloseBtn.style.display = "flex";
           authError.textContent = "";
           localStorage.setItem("airpad_code", inputCode.value.trim());
@@ -1015,6 +996,7 @@
 
   btnSubmitCode.addEventListener("click", () => {
     if (document.activeElement) document.activeElement.blur();
+    enterFullscreen();
     const code = inputCode.value.trim();
     if (!code) {
       authError.textContent = "Masukkan 4 digit kode terlebih dahulu!";
