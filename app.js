@@ -33,6 +33,22 @@
   // Auth & Navigation Elements
   const authModal = document.getElementById("auth-modal");
   const modalCloseBtn = document.getElementById("modal-close-btn");
+
+  let authModalOpenTime = Date.now();
+  function showAuthModal() {
+    if (!authModal) return;
+    authModalOpenTime = Date.now();
+    authModal.style.pointerEvents = "none";
+    authModal.classList.remove("hidden");
+    setTimeout(() => {
+      if (authModal) authModal.style.pointerEvents = "";
+    }, 350);
+  }
+
+  function hideAuthModal() {
+    if (!authModal) return;
+    authModal.classList.add("hidden");
+  }
   const modalTabs = document.getElementById("modal-tabs");
   const tabBtnConnect = document.getElementById("tab-btn-connect");
   const tabBtnDownload = document.getElementById("tab-btn-download");
@@ -104,7 +120,7 @@
 
   if (btnOpenDownloadModal) {
     btnOpenDownloadModal.addEventListener("click", () => {
-      authModal.classList.remove("hidden");
+      showAuthModal();
       switchTab("download");
       if (modalCloseBtn) modalCloseBtn.style.display = "flex";
     });
@@ -112,14 +128,14 @@
 
   if (modalCloseBtn) {
     modalCloseBtn.addEventListener("click", () => {
-      authModal.classList.add("hidden");
+      hideAuthModal();
     });
   }
 
   if (playerBadge) {
     playerBadge.style.cursor = "pointer";
     playerBadge.addEventListener("click", () => {
-      authModal.classList.remove("hidden");
+      showAuthModal();
     });
   }
 
@@ -298,7 +314,7 @@
     }
   }
 
-  // Fullscreen & Orientation Helper
+  // Fullscreen & Orientation Helpers
   async function enterFullscreen() {
     try {
       const docEl = document.documentElement;
@@ -316,6 +332,21 @@
     if (document.activeElement) document.activeElement.blur();
   }
 
+  async function exitFullscreen() {
+    try {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          await document.webkitExitFullscreen();
+        }
+      }
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+    } catch (e) {}
+  }
+
   window.addEventListener("orientationchange", () => {
     if (document.activeElement && document.activeElement.tagName === "INPUT") {
       document.activeElement.blur();
@@ -328,6 +359,7 @@
   // --- OUT DEVICE / DISCONNECT CONTROLLER ---
   function disconnectDevice() {
     isExplicitDisconnect = true;
+    exitFullscreen();
     if (ws) {
       try {
         send(["b", "SELECT", 0]);
@@ -346,22 +378,28 @@
     playerBadge.classList.remove("connected");
     pingText.textContent = "0 ms";
 
-    if (settingsModal) settingsModal.classList.add("hidden");
+    if (settingsModal) {
+      settingsModal.classList.add("hidden");
+      settingsModal.style.display = "none";
+    }
     if (window.isEditLayoutMode) exitEditLayout(false);
 
-    authModal.classList.remove("hidden");
+    showAuthModal();
     authError.textContent = "Controller telah diputuskan.";
     authError.style.color = "#94a3b8";
     switchTab("connect");
     haptic([30, 40]);
   }
 
-  // --- TAP / TOUCH LISTENER HELPER FOR 0MS TOUCH RESPONSE ---
+  // --- TAP / TOUCH LISTENER HELPER FOR 0MS TOUCH RESPONSE & GHOST-CLICK PREVENTION ---
+  let globalLastTouchEndTime = 0;
+
   function addTapListener(el, callback) {
     if (!el) return;
     let touchStarted = false;
     let startX = 0;
     let startY = 0;
+    let lastTapTime = 0;
 
     el.addEventListener("touchstart", (e) => {
       touchStarted = true;
@@ -379,12 +417,19 @@
           const dy = Math.abs(e.changedTouches[0].clientY - startY);
           if (dx > 20 || dy > 20) return;
         }
+        lastTapTime = Date.now();
+        globalLastTouchEndTime = Date.now();
         e.preventDefault();
         callback(e);
       }
     }, { passive: false });
 
     el.addEventListener("click", (e) => {
+      if (Date.now() - lastTapTime < 400 || Date.now() - globalLastTouchEndTime < 350) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       callback(e);
     });
   }
@@ -420,16 +465,18 @@
   }
 
   if (btnPreviewGamepad) {
-    addTapListener(btnPreviewGamepad, () => {
+    addTapListener(btnPreviewGamepad, (e) => {
+      if (Date.now() - authModalOpenTime < 350) return;
       if (document.activeElement) document.activeElement.blur();
-      if (authModal) authModal.classList.add("hidden");
+      hideAuthModal();
       enterFullscreen();
       haptic(25);
     });
   }
 
   if (btnSettingsDisconnect) {
-    addTapListener(btnSettingsDisconnect, () => {
+    addTapListener(btnSettingsDisconnect, (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
       disconnectDevice();
     });
   }
@@ -927,7 +974,7 @@
           playerNum = data.player;
           playerText.textContent = `PLAYER ${playerNum}`;
           playerBadge.classList.add("connected");
-          authModal.classList.add("hidden");
+          hideAuthModal();
           enterFullscreen();
           if (modalCloseBtn) modalCloseBtn.style.display = "flex";
           authError.textContent = "";
@@ -944,7 +991,7 @@
         } else if (data.type === "error") {
           authError.textContent = data.message || "Kode pairing salah!";
           authError.style.color = "#ef4444";
-          authModal.classList.remove("hidden");
+          showAuthModal();
           haptic([50, 100, 50]);
 
         } else if (Array.isArray(data) && data[0] === "pong") {
@@ -995,6 +1042,7 @@
   }
 
   btnSubmitCode.addEventListener("click", () => {
+    if (Date.now() - authModalOpenTime < 350) return;
     if (document.activeElement) document.activeElement.blur();
     enterFullscreen();
     const code = inputCode.value.trim();
