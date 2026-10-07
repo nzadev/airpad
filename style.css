@@ -1089,6 +1089,7 @@ body, html {
   position: relative;
   width: 156px;
   height: 156px;
+  touch-action: none;
 }
 
 .action-btn {
@@ -1105,8 +1106,9 @@ body, html {
   font-weight: 900;
   box-shadow: 0 5px 14px rgba(0, 0, 0, 0.4);
   touch-action: none;
+  pointer-events: none;
   cursor: pointer;
-  transition: transform 0.05s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.08s, box-shadow 0.08s;
+  transition: transform 0.05s ease, filter 0.06s ease, box-shadow 0.06s ease;
 }
 
 .action-btn.triangle {

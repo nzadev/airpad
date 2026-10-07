@@ -1210,9 +1210,177 @@
   }
 
   // Initialize D-Pad Manager
-  new DPadManager();
+  const dpadManagerInstance = new DPadManager();
 
-  // --- ACTION & SHOULDER BUTTONS ENGINE (MULTI-TOUCH + SLIDING + ZERO-STUCK FAILSFE) ---
+  // --- ULTRA-SMOOTH ACTION BUTTONS VECTOR ENGINE (ZERO-GAP CONTINUOUS SURFACE + COMBOS) ---
+  class ActionManager {
+    constructor() {
+      this.wrapper = document.querySelector(".action-wrapper");
+      if (!this.wrapper) return;
+
+      this.buttons = {
+        TRIANGLE: this.wrapper.querySelector('[data-btn="TRIANGLE"]'),
+        SQUARE: this.wrapper.querySelector('[data-btn="SQUARE"]'),
+        CIRCLE: this.wrapper.querySelector('[data-btn="CIRCLE"]'),
+        CROSS: this.wrapper.querySelector('[data-btn="CROSS"]')
+      };
+
+      this.activeStates = { TRIANGLE: false, SQUARE: false, CIRCLE: false, CROSS: false };
+      this.touches = new Map(); // touchId -> Set of button names
+
+      this.wrapper.addEventListener("touchstart", this.onTouchStart.bind(this), { passive: false });
+      window.addEventListener("touchmove", this.onTouchMove.bind(this), { passive: false });
+      window.addEventListener("touchend", this.onTouchEnd.bind(this), { passive: false });
+      window.addEventListener("touchcancel", this.onTouchEnd.bind(this), { passive: false });
+
+      // Desktop Mouse Fallback
+      let isMouseDown = false;
+      this.wrapper.addEventListener("mousedown", (e) => {
+        if (window.isEditLayoutMode) return;
+        if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+        isMouseDown = true;
+        this.processPoint("mouse", e.clientX, e.clientY);
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (isMouseDown) this.processPoint("mouse", e.clientX, e.clientY);
+      });
+      window.addEventListener("mouseup", (e) => {
+        if (isMouseDown) {
+          isMouseDown = false;
+          this.clearTouch("mouse");
+        }
+      });
+    }
+
+    onTouchStart(e) {
+      if (window.isEditLayoutMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        this.processPoint(touch.identifier, touch.clientX, touch.clientY);
+      }
+    }
+
+    onTouchMove(e) {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (this.touches.has(touch.identifier)) {
+          e.preventDefault();
+          this.processPoint(touch.identifier, touch.clientX, touch.clientY);
+        }
+      }
+    }
+
+    onTouchEnd(e) {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        this.clearTouch(e.changedTouches[i].identifier);
+      }
+      if (e.touches.length === 0) {
+        this.clearAll();
+      }
+    }
+
+    processPoint(touchId, clientX, clientY) {
+      const rect = this.wrapper.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const r = rect.width / 2;
+
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+      const distFromCenter = Math.hypot(dx, dy);
+
+      // Release if finger slides far outside wrapper
+      if (distFromCenter > r * 1.35) {
+        this.clearTouch(touchId);
+        return;
+      }
+
+      // Positions of button centers relative to wrapper center
+      const btnOffset = 0.65 * r;
+      const targets = {
+        TRIANGLE: { x: 0, y: -btnOffset },
+        CROSS: { x: 0, y: btnOffset },
+        SQUARE: { x: -btnOffset, y: 0 },
+        CIRCLE: { x: btnOffset, y: 0 }
+      };
+
+      const dists = {};
+      let closestName = "CROSS";
+      let minDist = Infinity;
+
+      for (const name in targets) {
+        const d = Math.hypot(dx - targets[name].x, dy - targets[name].y);
+        dists[name] = d;
+        if (d < minDist) {
+          minDist = d;
+          closestName = name;
+        }
+      }
+
+      const pressedForTouch = new Set();
+      // Always activate the closest button within valid sector
+      pressedForTouch.add(closestName);
+
+      // Multi-button dual press / combo support (adjacent buttons)
+      for (const name in dists) {
+        if (name !== closestName && dists[name] < r * 0.62) {
+          const isOpposite = (closestName === "TRIANGLE" && name === "CROSS") ||
+                             (closestName === "CROSS" && name === "TRIANGLE") ||
+                             (closestName === "SQUARE" && name === "CIRCLE") ||
+                             (closestName === "CIRCLE" && name === "SQUARE");
+          if (!isOpposite) {
+            pressedForTouch.add(name);
+          }
+        }
+      }
+
+      this.touches.set(touchId, pressedForTouch);
+      this.updateGlobalStates();
+    }
+
+    updateGlobalStates() {
+      const desired = { TRIANGLE: false, SQUARE: false, CIRCLE: false, CROSS: false };
+      for (const [_, btns] of this.touches) {
+        for (const btn of btns) {
+          desired[btn] = true;
+        }
+      }
+
+      let stateChanged = false;
+      for (const name in desired) {
+        if (desired[name] !== this.activeStates[name]) {
+          this.activeStates[name] = desired[name];
+          stateChanged = true;
+          send(["b", name, desired[name] ? 1 : 0]);
+          if (this.buttons[name]) {
+            this.buttons[name].classList.toggle("active", desired[name]);
+          }
+        }
+      }
+      if (stateChanged) {
+        haptic(16);
+      }
+    }
+
+    clearTouch(touchId) {
+      if (this.touches.has(touchId)) {
+        this.touches.delete(touchId);
+        this.updateGlobalStates();
+      }
+    }
+
+    clearAll() {
+      this.touches.clear();
+      this.updateGlobalStates();
+    }
+  }
+
+  // Initialize Action Buttons Manager
+  const actionManagerInstance = new ActionManager();
+
+  // --- SHOULDER & CENTER BUTTONS ENGINE (MULTI-TOUCH + SLIDING + ZERO-STUCK FAILSFE) ---
   const activeBtnTouches = new Map();
 
   function pressButton(btn, touchId) {
@@ -1264,7 +1432,7 @@
       releaseButton(btn, touchId);
     });
     activeBtnTouches.clear();
-    const allBtns = document.querySelectorAll("[data-btn]:not(.dpad-btn)");
+    const allBtns = document.querySelectorAll("[data-btn]:not(.dpad-btn):not(.action-btn)");
     allBtns.forEach((btn) => {
       if (btn.classList.contains("active")) {
         btn.classList.remove("active");
@@ -1277,7 +1445,7 @@
     });
   }
 
-  const standardButtons = document.querySelectorAll("[data-btn]:not(.dpad-btn)");
+  const standardButtons = document.querySelectorAll("[data-btn]:not(.dpad-btn):not(.action-btn)");
   standardButtons.forEach((el) => {
     el.addEventListener("touchstart", (e) => {
       if (window.isEditLayoutMode) return;
@@ -1327,7 +1495,7 @@
     });
   });
 
-  // Global touchmove with sliding release
+  // Global touchmove with sliding release for standard buttons
   window.addEventListener("touchmove", (e) => {
     if (window.isEditLayoutMode) return;
     for (let i = 0; i < e.changedTouches.length; i++) {
@@ -1335,7 +1503,7 @@
       if (activeBtnTouches.has(touch.identifier)) {
         const currentBtn = activeBtnTouches.get(touch.identifier);
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        const newBtn = target ? target.closest("[data-btn]:not(.dpad-btn)") : null;
+        const newBtn = target ? target.closest("[data-btn]:not(.dpad-btn):not(.action-btn)") : null;
 
         if (newBtn !== currentBtn) {
           releaseButton(currentBtn, touch.identifier);
@@ -1354,6 +1522,8 @@
     }
     if (e.touches.length === 0) {
       clearAllActiveButtons();
+      if (actionManagerInstance) actionManagerInstance.clearAll();
+      if (dpadManagerInstance) dpadManagerInstance.clearAll();
     }
   }, { passive: false });
 
@@ -1363,14 +1533,22 @@
     }
     if (e.touches.length === 0) {
       clearAllActiveButtons();
+      if (actionManagerInstance) actionManagerInstance.clearAll();
+      if (dpadManagerInstance) dpadManagerInstance.clearAll();
     }
   }, { passive: false });
 
   window.addEventListener("blur", () => {
     clearAllActiveButtons();
+    if (actionManagerInstance) actionManagerInstance.clearAll();
+    if (dpadManagerInstance) dpadManagerInstance.clearAll();
   });
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) clearAllActiveButtons();
+    if (document.hidden) {
+      clearAllActiveButtons();
+      if (actionManagerInstance) actionManagerInstance.clearAll();
+      if (dpadManagerInstance) dpadManagerInstance.clearAll();
+    }
   });
 
   // --- ZERO-LAG DUAL ANALOG ENGINE WITH L3/R3 CENTER CLICK ---
