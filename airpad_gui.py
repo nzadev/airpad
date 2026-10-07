@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtWebSockets import QWebSocket
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 STYLE_SHEET = """
 QMainWindow {
@@ -146,11 +146,25 @@ class AirPadMainWindow(QMainWindow):
         self.init_ui()
         self.load_initial_config()
 
+        self.check_and_start_server()
+
         self.poll_worker = ServerPollWorker()
         self.poll_worker.status_updated.connect(self.on_status_updated)
         self.poll_worker.start()
 
         self.setup_websocket()
+
+    def check_and_start_server(self):
+        try:
+            req = Request("http://127.0.0.1:8080/api/status", headers={"User-Agent": "AirPadGUI"})
+            with urlopen(req, timeout=0.6) as res:
+                if res.status == 200:
+                    return
+        except Exception:
+            pass
+        start_sh = os.path.join(BASE_DIR, "start.sh")
+        if os.path.exists(start_sh):
+            subprocess.Popen([start_sh], cwd=BASE_DIR)
 
     def load_initial_config(self):
         cfg_path = os.path.join(BASE_DIR, "config.json")
