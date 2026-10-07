@@ -111,6 +111,13 @@
     });
   }
 
+  if (playerBadge) {
+    playerBadge.style.cursor = "pointer";
+    playerBadge.addEventListener("click", () => {
+      authModal.classList.remove("hidden");
+    });
+  }
+
   // Purge dead/expired server hosts from localStorage
   const deadServers = ["victorian-internet", "lung-medline", "terminals-generate"];
   const curSaved = localStorage.getItem("airpad_server");
