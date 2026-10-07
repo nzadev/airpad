@@ -1,14 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SDK_DIR="/home/nza/Android/Sdk"
 BUILD_TOOLS="$SDK_DIR/build-tools/35.0.0"
 PLATFORM="$SDK_DIR/platforms/android-36"
 KEYSTORE="/home/nza/.android/debug.keystore"
 
-SRC_DIR="/home/nza/Projects/web-gamepad/android_src"
-BUILD_DIR="/home/nza/Projects/web-gamepad/android_build"
-OUT_APK="/home/nza/Projects/web-gamepad/AirPad.apk"
+SRC_DIR="$SCRIPT_DIR/android_src"
+BUILD_DIR="$SCRIPT_DIR/android_build"
+OUT_APK="$SCRIPT_DIR/AirPad.apk"
+
+echo ">> 0. Syncing web assets to APK assets & static folder..."
+mkdir -p "$SRC_DIR/assets" "$SCRIPT_DIR/static"
+for f in index.html app.js style.css jsqr.min.js config.json manifest.json app_icon.png icon.svg; do
+    if [[ -f "$SCRIPT_DIR/$f" ]]; then
+        cp "$SCRIPT_DIR/$f" "$SRC_DIR/assets/$f"
+        cp "$SCRIPT_DIR/$f" "$SCRIPT_DIR/static/$f"
+    fi
+done
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/compiled_res" "$BUILD_DIR/gen" "$BUILD_DIR/classes"
@@ -57,5 +67,7 @@ echo ">> 7. Signing APK with apksigner..."
 
 echo ">> Verification:"
 "$BUILD_TOOLS/apksigner" verify "$OUT_APK"
+
+cp "$OUT_APK" "$SCRIPT_DIR/static/AirPad.apk"
 
 echo ">> SUCCESS: APK generated at $OUT_APK ($(ls -lh "$OUT_APK" | awk '{print $5}'))"

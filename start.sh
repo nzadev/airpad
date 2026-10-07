@@ -41,11 +41,14 @@ done
 
 LOCAL_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}' || hostname -I | awk '{print $1}')
 SERVER_HOST=$(echo "$PUBLIC_URL" | sed -E 's#^https?://##')
+APP_URL="airpad://connect?code=$AIRPAD_CODE&server=$SERVER_HOST"
 GITHUB_URL="https://nzadev.github.io/airpad/?code=$AIRPAD_CODE&server=$SERVER_HOST"
 FULL_URL="$PUBLIC_URL/?code=$AIRPAD_CODE"
+LOCAL_URL="http://$LOCAL_IP:$PORT/?code=$AIRPAD_CODE"
 
 if [[ -n "$SERVER_HOST" ]]; then
-    printf '{"server":"%s"}\n' "$SERVER_HOST" > "$SCRIPT_DIR/config.json"
+    printf '{"server":"%s","local_ip":"%s:%s","code":"%s"}\n' "$SERVER_HOST" "$LOCAL_IP" "$PORT" "$AIRPAD_CODE" > "$SCRIPT_DIR/config.json"
+    cp "$SCRIPT_DIR/config.json" "$SCRIPT_DIR/static/config.json" 2>/dev/null || true
     (
         cd "$SCRIPT_DIR"
         git add config.json 2>/dev/null || true
@@ -60,20 +63,19 @@ echo "🎮 AIRPAD - VIRTUAL GAMEPAD DENGAN KODE PAIRING!"
 echo "=========================================================="
 echo "🔑 KODE PAIRING STIK : [ $AIRPAD_CODE ]"
 echo "=========================================================="
-echo "🌐 LINK RESMI GITHUB LU (PAKAI AKUN NZADEV):"
+echo "📱 SCAN QR INI DARI APLIKASI AIRPAD HP (ATAU KAMERA HP):"
+echo ">> Di aplikasi AirPad: Tap tombol [SCAN QR PC]"
+echo ">> Lewat Kamera HP: Langsung buka aplikasi AirPad (Bukan Browser!)"
+echo "=========================================================="
+qrencode -t UTF8 "$APP_URL" 2>/dev/null || true
+echo "=========================================================="
+echo "🌐 Link Web (Jika main via Browser HP / Laptop):"
 echo "   $GITHUB_URL"
 echo ""
-echo "🔗 Link Alternatif Langsung:"
-echo "   $FULL_URL"
-echo ""
-echo "🏠 Link Lokal (Satu Wi-Fi):"
-echo "   http://$LOCAL_IP:$PORT/?code=$AIRPAD_CODE"
+echo "🏠 Link Wi-Fi Lokal (1 Jaringan):"
+echo "   $LOCAL_URL"
 echo "=========================================================="
-echo "📷 SCAN QR CODE INI (LANGSUNG KE GITHUB NZADEV):"
-echo "=========================================================="
-qrencode -t UTF8 "$GITHUB_URL" 2>/dev/null || true
-echo "=========================================================="
-echo ">> Temen lu cukup buka link & masukkan kode: $AIRPAD_CODE"
+echo ">> Temen lu cukup buka AirPad & scan QR / ketik kode: $AIRPAD_CODE"
 echo ">> Tiap HP yang konek otomatis terdaftar jadi P1, P2, dst!"
 echo ">> Tekan Ctrl+C untuk mematikan server."
 echo "=========================================================="
