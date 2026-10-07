@@ -240,27 +240,35 @@
       color: #fff;
     }
 
-    .players-list {
-      display: flex;
-      flex-direction: column;
+    .players-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
 
     .player-slot {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 10px;
       background: rgba(15, 23, 42, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 12px;
-      padding: 12px 16px;
+      padding: 10px 12px;
       transition: all 0.3s;
     }
 
+    .player-badge {
+      font-size: 11px;
+      font-weight: 900;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-align: center;
+      min-width: 28px;
+    }
+
     .player-slot.active {
-      background: linear-gradient(135deg, rgba(30, 58, 138, 0.3) 0%, rgba(3, 105, 161, 0.2) 100%);
-      border-color: rgba(56, 189, 248, 0.4);
-      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.15);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
     }
 
     .slot-info {
@@ -269,17 +277,13 @@
       gap: 12px;
     }
 
-    .slot-icon {
-      font-size: 20px;
-    }
-
     .slot-name {
-      font-weight: 700;
-      font-size: 14px;
+      font-weight: 800;
+      font-size: 13px;
     }
 
     .slot-status {
-      font-size: 12px;
+      font-size: 11px;
       color: #64748b;
     }
 
@@ -370,28 +374,8 @@
 
     <!-- Right Column: Live Players & Activity -->
     <div class="card">
-      <div class="card-title">🎮 STIK TERHUBUNG</div>
-      <div class="players-list">
-        <div id="player-1" class="player-slot">
-          <div class="slot-info">
-            <span class="slot-icon">🎮</span>
-            <div>
-              <div class="slot-name">PLAYER 1</div>
-              <div class="slot-status" id="p1-status">Menunggu HP terhubung...</div>
-            </div>
-          </div>
-        </div>
-
-        <div id="player-2" class="player-slot">
-          <div class="slot-info">
-            <span class="slot-icon">🎮</span>
-            <div>
-              <div class="slot-name">PLAYER 2</div>
-              <div class="slot-status" id="p2-status">Menunggu HP terhubung...</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="card-title">🎮 STIK TERHUBUNG (MAX 8)</div>
+      <div id="players-grid" class="players-grid"></div>
 
       <div class="log-card">
         <div class="card-title" style="font-size: 12px;">⚡ LIVE INPUT MONITOR</div>
@@ -417,6 +401,41 @@
       alert("Tersalin: " + text);
     }
 
+    const PLAYER_THEMES = {
+      1: { color: "#38bdf8", badge: "#0284c7", activeBorder: "#38bdf8", activeBg: "rgba(14, 165, 233, 0.2)" },
+      2: { color: "#f87171", badge: "#dc2626", activeBorder: "#f87171", activeBg: "rgba(239, 68, 68, 0.2)" },
+      3: { color: "#4ade80", badge: "#16a34a", activeBorder: "#4ade80", activeBg: "rgba(34, 197, 94, 0.2)" },
+      4: { color: "#facc15", badge: "#ca8a04", activeBorder: "#facc15", activeBg: "rgba(234, 179, 8, 0.2)" },
+      5: { color: "#c084fc", badge: "#9333ea", activeBorder: "#c084fc", activeBg: "rgba(168, 85, 247, 0.2)" },
+      6: { color: "#fb923c", badge: "#ea580c", activeBorder: "#fb923c", activeBg: "rgba(249, 115, 22, 0.2)" },
+      7: { color: "#2dd4bf", badge: "#0d9488", activeBorder: "#2dd4bf", activeBg: "rgba(20, 184, 166, 0.2)" },
+      8: { color: "#f472b6", badge: "#db2777", activeBorder: "#f472b6", activeBg: "rgba(236, 72, 153, 0.2)" }
+    };
+
+    function ensurePlayerSlot(p) {
+      let slot = document.getElementById(`player-${p}`);
+      if (!slot) {
+        const grid = document.getElementById("players-grid");
+        const theme = PLAYER_THEMES[p] || PLAYER_THEMES[1];
+        slot = document.createElement("div");
+        slot.id = `player-${p}`;
+        slot.className = "player-slot";
+        slot.innerHTML = `
+          <div class="player-badge" style="background: ${theme.badge}">P${p}</div>
+          <div style="flex: 1; overflow: hidden;">
+            <div class="slot-name" style="color: ${theme.color}; font-size: 12px;">PLAYER ${p}</div>
+            <div class="slot-status" id="p${p}-status" style="font-size: 10px; color: #64748b;">Menunggu HP...</div>
+          </div>
+        `;
+        grid.appendChild(slot);
+      }
+      return slot;
+    }
+
+    for (let i = 1; i <= 4; i++) {
+      ensurePlayerSlot(i);
+    }
+
     async function refreshStatus() {
       try {
         const res = await fetch("/api/status");
@@ -426,24 +445,29 @@
           document.getElementById("tunnel-url").textContent = "🌐 Cloudflare: " + (data.tunnel || "-");
           document.getElementById("local-url").textContent = "🏠 Wi-Fi Lokal: " + (data.local_ip || "-");
 
-          const p1 = document.getElementById("player-1");
-          const p1s = document.getElementById("p1-status");
-          if (data.players && data.players.includes(1)) {
-            p1.classList.add("active");
-            p1s.textContent = "🟢 Terhubung & Siap Main";
-          } else {
-            p1.classList.remove("active");
-            p1s.textContent = "Menunggu HP terhubung...";
-          }
-
-          const p2 = document.getElementById("player-2");
-          const p2s = document.getElementById("p2-status");
-          if (data.players && data.players.includes(2)) {
-            p2.classList.add("active");
-            p2s.textContent = "🟢 Terhubung & Siap Main";
-          } else {
-            p2.classList.remove("active");
-            p2s.textContent = "Menunggu HP terhubung...";
+          const connected = data.players || [];
+          const maxSlot = Math.max(4, ...connected);
+          for (let p = 1; p <= Math.min(8, maxSlot); p++) {
+            const slot = ensurePlayerSlot(p);
+            const statusEl = document.getElementById(`p${p}-status`);
+            const theme = PLAYER_THEMES[p] || PLAYER_THEMES[1];
+            if (connected.includes(p)) {
+              slot.classList.add("active");
+              slot.style.background = theme.activeBg;
+              slot.style.borderColor = theme.activeBorder;
+              if (statusEl) {
+                statusEl.textContent = "🟢 Terhubung";
+                statusEl.style.color = "#4ade80";
+              }
+            } else {
+              slot.classList.remove("active");
+              slot.style.background = "rgba(15, 23, 42, 0.6)";
+              slot.style.borderColor = "rgba(255, 255, 255, 0.06)";
+              if (statusEl) {
+                statusEl.textContent = "Menunggu HP...";
+                statusEl.style.color = "#64748b";
+              }
+            }
           }
         }
       } catch (e) {}

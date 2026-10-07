@@ -91,6 +91,17 @@ QTextEdit.log-box {
 }
 """
 
+PLAYER_THEMES = {
+    1: {"color": "#38bdf8", "bg_active": "rgba(14, 165, 233, 0.22)", "border_active": "#38bdf8", "badge_bg": "#0284c7"},
+    2: {"color": "#f87171", "bg_active": "rgba(239, 68, 68, 0.22)", "border_active": "#f87171", "badge_bg": "#dc2626"},
+    3: {"color": "#4ade80", "bg_active": "rgba(34, 197, 94, 0.22)", "border_active": "#4ade80", "badge_bg": "#16a34a"},
+    4: {"color": "#facc15", "bg_active": "rgba(234, 179, 8, 0.22)", "border_active": "#facc15", "badge_bg": "#ca8a04"},
+    5: {"color": "#c084fc", "bg_active": "rgba(168, 85, 247, 0.22)", "border_active": "#c084fc", "badge_bg": "#9333ea"},
+    6: {"color": "#fb923c", "bg_active": "rgba(249, 115, 22, 0.22)", "border_active": "#fb923c", "badge_bg": "#ea580c"},
+    7: {"color": "#2dd4bf", "bg_active": "rgba(20, 184, 166, 0.22)", "border_active": "#2dd4bf", "badge_bg": "#0d9488"},
+    8: {"color": "#f472b6", "bg_active": "rgba(236, 72, 153, 0.22)", "border_active": "#f472b6", "badge_bg": "#db2777"},
+}
+
 class ServerPollWorker(QThread):
     status_updated = pyqtSignal(dict)
 
@@ -285,34 +296,17 @@ class AirPadMainWindow(QMainWindow):
         card_right_layout.setContentsMargins(18, 16, 18, 16)
         card_right_layout.setSpacing(12)
 
-        lbl_players_title = QLabel("🎮 STATUS STIK TERHUBUNG")
+        lbl_players_title = QLabel("🎮 STATUS STIK TERHUBUNG (MAX 8)")
         lbl_players_title.setProperty("class", "title")
         card_right_layout.addWidget(lbl_players_title)
 
-        # Slots
+        # Slots Grid (2 columns, default P1-P4, expandable up to 8)
+        self.players_grid = QGridLayout()
+        self.players_grid.setSpacing(8)
         self.slots = {}
-        for p in range(1, 3):
-            slot_frame = QFrame()
-            slot_frame.setStyleSheet("background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 10px 14px;")
-            slot_layout = QHBoxLayout(slot_frame)
-            slot_layout.setContentsMargins(6, 6, 6, 6)
-
-            icon_lbl = QLabel("🎮")
-            icon_lbl.setStyleSheet("font-size: 20px;")
-            slot_layout.addWidget(icon_lbl)
-
-            info_vbox = QVBoxLayout()
-            p_name = QLabel(f"PLAYER {p}")
-            p_name.setStyleSheet("font-size: 13px; font-weight: 800; color: #f8fafc;")
-            p_status = QLabel("Menunggu HP tersambung...")
-            p_status.setStyleSheet("font-size: 11px; color: #64748b;")
-            info_vbox.addWidget(p_name)
-            info_vbox.addWidget(p_status)
-            slot_layout.addLayout(info_vbox)
-            slot_layout.addStretch()
-
-            self.slots[p] = {"frame": slot_frame, "status": p_status}
-            card_right_layout.addWidget(slot_frame)
+        for p in range(1, 5):
+            self.create_player_slot(p)
+        card_right_layout.addLayout(self.players_grid)
 
         # Live Input Log
         lbl_log_title = QLabel("⚡ LIVE INPUT MONITOR")
@@ -375,16 +369,54 @@ class AirPadMainWindow(QMainWindow):
         except Exception:
             pass
 
-    def set_player_state(self, p, active):
+    def create_player_slot(self, p):
         if p in self.slots:
-            if active:
-                self.slots[p]["frame"].setStyleSheet("background: linear-gradient(135deg, rgba(30, 58, 138, 0.3) 0%, rgba(3, 105, 161, 0.25) 100%); border: 1.5px solid rgba(56, 189, 248, 0.5); border-radius: 12px; padding: 10px 14px;")
-                self.slots[p]["status"].setText("🟢 Terhubung & Aktif")
-                self.slots[p]["status"].setStyleSheet("font-size: 11px; color: #4ade80; font-weight: 700;")
+            return
+        theme = PLAYER_THEMES.get(p, PLAYER_THEMES[1])
+        slot_frame = QFrame()
+        slot_frame.setStyleSheet("background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 6px 10px;")
+        slot_layout = QHBoxLayout(slot_frame)
+        slot_layout.setContentsMargins(4, 4, 4, 4)
+        slot_layout.setSpacing(8)
+
+        # Player badge
+        badge = QLabel(f"P{p}")
+        badge.setStyleSheet(f"background: {theme['badge_bg']}; color: #ffffff; font-weight: 900; font-size: 11px; border-radius: 6px; padding: 4px 7px;")
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        slot_layout.addWidget(badge)
+
+        info_vbox = QVBoxLayout()
+        info_vbox.setSpacing(2)
+        p_name = QLabel(f"PLAYER {p}")
+        p_name.setStyleSheet(f"font-size: 12px; font-weight: 800; color: {theme['color']};")
+        p_status = QLabel("Menunggu HP...")
+        p_status.setStyleSheet("font-size: 10px; color: #64748b;")
+        info_vbox.addWidget(p_name)
+        info_vbox.addWidget(p_status)
+        slot_layout.addLayout(info_vbox)
+        slot_layout.addStretch()
+
+        self.slots[p] = {"frame": slot_frame, "status": p_status, "theme": theme}
+        row = (p - 1) // 2
+        col = (p - 1) % 2
+        self.players_grid.addWidget(slot_frame, row, col)
+
+    def set_player_state(self, p, active):
+        if p not in self.slots:
+            if p <= 8:
+                self.create_player_slot(p)
             else:
-                self.slots[p]["frame"].setStyleSheet("background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 10px 14px;")
-                self.slots[p]["status"].setText("Menunggu HP tersambung...")
-                self.slots[p]["status"].setStyleSheet("font-size: 11px; color: #64748b;")
+                return
+
+        theme = self.slots[p]["theme"]
+        if active:
+            self.slots[p]["frame"].setStyleSheet(f"background: {theme['bg_active']}; border: 1.5px solid {theme['border_active']}; border-radius: 10px; padding: 6px 10px;")
+            self.slots[p]["status"].setText("🟢 Terhubung")
+            self.slots[p]["status"].setStyleSheet("font-size: 10px; color: #4ade80; font-weight: 700;")
+        else:
+            self.slots[p]["frame"].setStyleSheet("background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 6px 10px;")
+            self.slots[p]["status"].setText("Menunggu HP...")
+            self.slots[p]["status"].setStyleSheet("font-size: 10px; color: #64748b;")
 
     def on_status_updated(self, data):
         if data.get("status") == "offline":
@@ -418,8 +450,10 @@ class AirPadMainWindow(QMainWindow):
             self.update_qr_image()
 
         players = data.get("players", [])
-        for p in range(1, 3):
-            self.set_player_state(p, p in players)
+        max_slot = max([4] + players)
+        for p in range(1, max_slot + 1):
+            if p <= 8:
+                self.set_player_state(p, p in players)
 
     def update_qr_image(self):
         target_server = self.current_local_ip if self.qr_mode == "local" else self.current_tunnel
