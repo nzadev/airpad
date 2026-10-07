@@ -40,6 +40,8 @@ for _ in {1..40}; do
 done
 
 LOCAL_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}' || hostname -I | awk '{print $1}')
+SERVER_HOST=$(echo "$PUBLIC_URL" | sed -E 's#^https?://##')
+GITHUB_URL="https://nzadev.github.io/airpad/?code=$AIRPAD_CODE&server=$SERVER_HOST"
 FULL_URL="$PUBLIC_URL/?code=$AIRPAD_CODE"
 
 echo ""
@@ -48,18 +50,18 @@ echo "🎮 AIRPAD - VIRTUAL GAMEPAD DENGAN KODE PAIRING!"
 echo "=========================================================="
 echo "🔑 KODE PAIRING STIK : [ $AIRPAD_CODE ]"
 echo "=========================================================="
-echo "🌐 LINK APLIKASI (BEDA JARINGAN / KUOTA HP):"
-echo "   $PUBLIC_URL"
+echo "🌐 LINK RESMI GITHUB LU (PAKAI AKUN NZADEV):"
+echo "   $GITHUB_URL"
 echo ""
-echo "🔗 LINK OTOMATIS (Langsung Connect Tanpa Ketik Kode):"
+echo "🔗 Link Alternatif Langsung:"
 echo "   $FULL_URL"
 echo ""
-echo "🏠 LINK LOKAL (JIKA SATU WI-FI):"
+echo "🏠 Link Lokal (Satu Wi-Fi):"
 echo "   http://$LOCAL_IP:$PORT/?code=$AIRPAD_CODE"
 echo "=========================================================="
-echo "📷 SCAN QR CODE INI PAKAI KAMERA HP BUAT LANGSUNG KONEK:"
+echo "📷 SCAN QR CODE INI (LANGSUNG KE GITHUB NZADEV):"
 echo "=========================================================="
-qrencode -t UTF8 "$FULL_URL" 2>/dev/null || true
+qrencode -t UTF8 "$GITHUB_URL" 2>/dev/null || true
 echo "=========================================================="
 echo ">> Temen lu cukup buka link & masukkan kode: $AIRPAD_CODE"
 echo ">> Tiap HP yang konek otomatis terdaftar jadi P1, P2, dst!"
