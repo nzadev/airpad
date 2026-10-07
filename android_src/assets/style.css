@@ -850,6 +850,45 @@ body, html {
 .top-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.icon-btn-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.icon-btn-pill:active {
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.icon-btn-pill.danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.icon-btn-pill.danger:active {
+  background: rgba(239, 68, 68, 0.3);
+  transform: scale(0.94);
+}
+
+.btn-text-sm {
+  font-size: 11px;
+  letter-spacing: 0.4px;
 }
 
 .icon-btn {
@@ -1162,3 +1201,308 @@ body, html {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(1.08); }
 }
+
+/* Settings & Customization Modal */
+.settings-card {
+  max-width: 480px;
+  padding: 20px 22px;
+  border-radius: 18px;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+  margin-bottom: 6px;
+}
+
+.settings-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-title-row h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 16px;
+  border-radius: 14px;
+  gap: 12px;
+}
+
+.setting-item.danger-item {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.setting-info strong {
+  font-size: 14px;
+  color: #f1f5f9;
+}
+
+.setting-info span {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch .slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #334155;
+  transition: 0.22s;
+  border-radius: 26px;
+}
+
+.toggle-switch .slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.22s;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-switch input:checked + .slider {
+  background-color: #3b82f6;
+}
+
+.toggle-switch input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Scale button group */
+.scale-btn-group {
+  display: flex;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.scale-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scale-btn.active {
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Action buttons in settings */
+.btn-accent-sm {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+  transition: all 0.15s ease;
+}
+
+.btn-accent-sm:active {
+  transform: scale(0.95);
+}
+
+.btn-danger-sm {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.3);
+  transition: all 0.15s ease;
+}
+
+.btn-danger-sm:active {
+  transform: scale(0.95);
+}
+
+/* Custom Layout HUD */
+.edit-layout-hud {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1.5px solid #3b82f6;
+  border-radius: 30px;
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 10000;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(59, 130, 246, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.edit-layout-hud.hidden {
+  display: none !important;
+}
+
+.edit-hud-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #f1f5f9;
+}
+
+.edit-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3b82f6;
+  animation: pulse 1s infinite;
+}
+
+.edit-sub {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.edit-hud-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-edit-action {
+  border: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-edit-action.reset {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-edit-action.cancel {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-edit-action.save {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
+}
+
+.btn-edit-action:active {
+  transform: scale(0.94);
+}
+
+/* Edit Mode styling on gamepad elements */
+body.edit-mode-active {
+  background-color: #080a14;
+}
+
+body.edit-mode-active [data-draggable-cluster] {
+  outline: 2px dashed #3b82f6 !important;
+  outline-offset: 4px;
+  cursor: grab;
+  position: relative;
+  touch-action: none !important;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.08) !important;
+  z-index: 500;
+}
+
+body.edit-mode-active [data-draggable-cluster]::after {
+  content: "✥ GESER";
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3b82f6;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+body.edit-mode-active [data-draggable-cluster].is-dragging {
+  cursor: grabbing;
+  outline-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.16) !important;
+  z-index: 999;
+}
+
+body.edit-mode-active [data-draggable-cluster].is-dragging::after {
+  content: "SEDANG DIGESER";
+  background: #10b981;
+}
+

@@ -7,9 +7,29 @@
   const playerBadge = document.getElementById("player-badge");
   const playerText = document.getElementById("player-text");
   const pingText = document.getElementById("ping-text");
-  const btnVibrate = document.getElementById("btn-vibrate");
-  const btnFullscreen = document.getElementById("btn-fullscreen");
   const btnForceFs = document.getElementById("btn-force-fs");
+  const btnOpenSettings = document.getElementById("btn-open-settings");
+  const btnDisconnect = document.getElementById("btn-disconnect");
+
+  // Settings Modal & Custom Layout Elements
+  const settingsModal = document.getElementById("settings-modal");
+  const btnCloseSettings = document.getElementById("btn-close-settings");
+  const toggleVibrate = document.getElementById("toggle-vibrate");
+  const scaleBtns = document.querySelectorAll(".scale-btn");
+  const btnStartEditLayout = document.getElementById("btn-start-edit-layout");
+  const btnSettingsDisconnect = document.getElementById("btn-settings-disconnect");
+
+  const editLayoutHud = document.getElementById("edit-layout-hud");
+  const btnResetLayout = document.getElementById("btn-reset-layout");
+  const btnCancelLayout = document.getElementById("btn-cancel-layout");
+  const btnSaveLayout = document.getElementById("btn-save-layout");
+
+  // Custom Layout & State
+  window.isEditLayoutMode = false;
+  let isExplicitDisconnect = false;
+  let currentLayout = {};
+  let tempLayout = {};
+  let currentScale = 1.0;
 
   // Auth & Navigation Elements
   const authModal = document.getElementById("auth-modal");
@@ -272,14 +292,7 @@
     }
   }
 
-  if (btnVibrate) {
-    btnVibrate.addEventListener("click", () => {
-      vibrateEnabled = !vibrateEnabled;
-      btnVibrate.classList.toggle("active", vibrateEnabled);
-    });
-  }
-
-  // Fullscreen Helper
+  // Fullscreen Helper (Used by landscape prompt)
   async function enterFullscreen() {
     try {
       if (!document.fullscreenElement) {
@@ -291,8 +304,268 @@
     } catch (e) {}
   }
 
-  if (btnFullscreen) btnFullscreen.addEventListener("click", enterFullscreen);
   if (btnForceFs) btnForceFs.addEventListener("click", enterFullscreen);
+
+  // --- OUT DEVICE / DISCONNECT CONTROLLER ---
+  function disconnectDevice() {
+    isExplicitDisconnect = true;
+    if (ws) {
+      try {
+        send(["b", "SELECT", 0]);
+        send(["b", "START", 0]);
+        send(["b", "PS", 0]);
+        ws.close(1000, "User disconnected");
+      } catch (e) {}
+      ws = null;
+    }
+    if (pingInterval) {
+      clearInterval(pingInterval);
+      pingInterval = null;
+    }
+    playerNum = null;
+    playerText.textContent = "Terputus";
+    playerBadge.classList.remove("connected");
+    pingText.textContent = "0 ms";
+
+    if (settingsModal) settingsModal.classList.add("hidden");
+    if (window.isEditLayoutMode) exitEditLayout(false);
+
+    authModal.classList.remove("hidden");
+    authError.textContent = "Controller telah diputuskan.";
+    authError.style.color = "#94a3b8";
+    switchTab("connect");
+    haptic([30, 40]);
+  }
+
+  if (btnDisconnect) btnDisconnect.addEventListener("click", disconnectDevice);
+  if (btnSettingsDisconnect) btnSettingsDisconnect.addEventListener("click", disconnectDevice);
+
+  // --- SETTINGS MODAL LISTENERS ---
+  if (btnOpenSettings) {
+    btnOpenSettings.addEventListener("click", () => {
+      if (settingsModal) settingsModal.classList.remove("hidden");
+      haptic(20);
+    });
+  }
+
+  if (btnCloseSettings) {
+    btnCloseSettings.addEventListener("click", () => {
+      if (settingsModal) settingsModal.classList.add("hidden");
+    });
+  }
+
+  if (toggleVibrate) {
+    toggleVibrate.addEventListener("change", () => {
+      vibrateEnabled = toggleVibrate.checked;
+      localStorage.setItem("airpad_vibrate", vibrateEnabled ? "1" : "0");
+      if (vibrateEnabled) haptic(35);
+    });
+  }
+
+  scaleBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      scaleBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentScale = parseFloat(btn.dataset.scale) || 1.0;
+      localStorage.setItem("airpad_button_scale", String(currentScale));
+      applyLayout(window.isEditLayoutMode ? tempLayout : currentLayout);
+      haptic(20);
+    });
+  });
+
+  if (btnStartEditLayout) {
+    btnStartEditLayout.addEventListener("click", () => {
+      startEditLayout();
+    });
+  }
+
+  if (btnSaveLayout) {
+    btnSaveLayout.addEventListener("click", () => {
+      exitEditLayout(true);
+      haptic([30, 40]);
+    });
+  }
+
+  if (btnCancelLayout) {
+    btnCancelLayout.addEventListener("click", () => {
+      exitEditLayout(false);
+      haptic(20);
+    });
+  }
+
+  if (btnResetLayout) {
+    btnResetLayout.addEventListener("click", () => {
+      resetLayoutToDefault();
+    });
+  }
+
+  // --- CUSTOM LAYOUT & POSITION ENGINE ---
+  const CLUSTER_IDS = [
+    "cluster-lshoulders",
+    "cluster-center",
+    "cluster-rshoulders",
+    "cluster-dpad",
+    "cluster-lstick",
+    "cluster-rstick",
+    "cluster-actions"
+  ];
+
+  function loadSavedSettings() {
+    const savedVib = localStorage.getItem("airpad_vibrate");
+    if (savedVib !== null) {
+      vibrateEnabled = savedVib === "1";
+    }
+    if (toggleVibrate) {
+      toggleVibrate.checked = vibrateEnabled;
+    }
+
+    const savedScale = localStorage.getItem("airpad_button_scale");
+    if (savedScale) {
+      currentScale = parseFloat(savedScale) || 1.0;
+      scaleBtns.forEach((btn) => {
+        btn.classList.toggle("active", parseFloat(btn.dataset.scale) === currentScale);
+      });
+    }
+
+    try {
+      const savedLayout = localStorage.getItem("airpad_custom_layout");
+      if (savedLayout) {
+        currentLayout = JSON.parse(savedLayout) || {};
+      }
+    } catch (e) {
+      currentLayout = {};
+    }
+
+    applyLayout(currentLayout);
+  }
+
+  function applyLayout(layoutMap) {
+    CLUSTER_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const pos = layoutMap[id];
+      const x = pos && typeof pos.x === "number" ? pos.x : 0;
+      const y = pos && typeof pos.y === "number" ? pos.y : 0;
+      el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${currentScale})`;
+    });
+  }
+
+  function startEditLayout() {
+    window.isEditLayoutMode = true;
+    tempLayout = JSON.parse(JSON.stringify(currentLayout));
+    if (settingsModal) settingsModal.classList.add("hidden");
+    if (editLayoutHud) editLayoutHud.classList.remove("hidden");
+    document.body.classList.add("edit-mode-active");
+    haptic([30, 40]);
+  }
+
+  function exitEditLayout(shouldSave) {
+    window.isEditLayoutMode = false;
+    document.body.classList.remove("edit-mode-active");
+    if (editLayoutHud) editLayoutHud.classList.add("hidden");
+
+    if (shouldSave) {
+      currentLayout = JSON.parse(JSON.stringify(tempLayout));
+      localStorage.setItem("airpad_custom_layout", JSON.stringify(currentLayout));
+    } else {
+      applyLayout(currentLayout);
+    }
+  }
+
+  function resetLayoutToDefault() {
+    currentLayout = {};
+    tempLayout = {};
+    localStorage.removeItem("airpad_custom_layout");
+    applyLayout({});
+    exitEditLayout(false);
+    haptic([40, 60]);
+  }
+
+  function initClusterDraggable() {
+    CLUSTER_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.setAttribute("data-draggable-cluster", "true");
+
+      let dragging = false;
+      let startX = 0;
+      let startY = 0;
+      let initialClusterX = 0;
+      let initialClusterY = 0;
+
+      const onStart = (clientX, clientY) => {
+        if (!window.isEditLayoutMode) return;
+        dragging = true;
+        el.classList.add("is-dragging");
+        startX = clientX;
+        startY = clientY;
+
+        const currentPos = tempLayout[id] || currentLayout[id] || { x: 0, y: 0 };
+        initialClusterX = currentPos.x || 0;
+        initialClusterY = currentPos.y || 0;
+        haptic(15);
+      };
+
+      const onMove = (clientX, clientY) => {
+        if (!dragging || !window.isEditLayoutMode) return;
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+
+        let newX = Math.round(initialClusterX + dx);
+        let newY = Math.round(initialClusterY + dy);
+
+        // Clamp inside 45% screen width/height so elements can never get lost off-screen
+        const maxW = Math.round(window.innerWidth * 0.45);
+        const maxH = Math.round(window.innerHeight * 0.45);
+        newX = Math.max(-maxW, Math.min(maxW, newX));
+        newY = Math.max(-maxH, Math.min(maxH, newY));
+
+        tempLayout[id] = { x: newX, y: newY };
+        el.style.transform = `translate3d(${newX}px, ${newY}px, 0) scale(${currentScale})`;
+      };
+
+      const onEnd = () => {
+        if (!dragging) return;
+        dragging = false;
+        el.classList.remove("is-dragging");
+      };
+
+      el.addEventListener("touchstart", (e) => {
+        if (!window.isEditLayoutMode) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const t = e.changedTouches[0];
+        onStart(t.clientX, t.clientY);
+      }, { passive: false });
+
+      window.addEventListener("touchmove", (e) => {
+        if (!dragging || !window.isEditLayoutMode) return;
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          onMove(t.clientX, t.clientY);
+          break;
+        }
+      }, { passive: false });
+
+      window.addEventListener("touchend", () => onEnd());
+      window.addEventListener("touchcancel", () => onEnd());
+
+      el.addEventListener("mousedown", (e) => {
+        if (!window.isEditLayoutMode) return;
+        if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+        e.preventDefault();
+        onStart(e.clientX, e.clientY);
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!dragging || !window.isEditLayoutMode) return;
+        onMove(e.clientX, e.clientY);
+      });
+
+      window.addEventListener("mouseup", () => onEnd());
+    });
+  }
 
   const btnIgnorePortrait = document.getElementById("btn-ignore-portrait");
   const landscapeWarning = document.getElementById("landscape-warning");
@@ -572,10 +845,16 @@
 
     ws.onclose = () => {
       if (connectionTimeout) clearTimeout(connectionTimeout);
-      playerText.textContent = "Terputus (Reconnect...)";
       playerBadge.classList.remove("connected");
       if (pingInterval) clearInterval(pingInterval);
 
+      if (isExplicitDisconnect) {
+        isExplicitDisconnect = false;
+        playerText.textContent = "Terputus";
+        return;
+      }
+
+      playerText.textContent = "Terputus (Reconnect...)";
       if (!authModal.classList.contains("hidden")) {
         authError.innerHTML = `⚠️ Jaringan terputus ke server PC (${activeServerHost || "Server"}).<br><span style="font-size:10px;color:#94a3b8">Pastikan terminal PC jalan, atau tap <b>SCAN QR PC</b> lagi.</span>`;
         authError.style.color = "#ef4444";
@@ -661,6 +940,7 @@
       // Desktop Mouse Fallback
       let isMouseDown = false;
       this.wrapper.addEventListener("mousedown", (e) => {
+        if (window.isEditLayoutMode) return;
         if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
         isMouseDown = true;
         this.processPoint(e.clientX, e.clientY);
@@ -677,6 +957,7 @@
     }
 
     onTouchStart(e) {
+      if (window.isEditLayoutMode) return;
       e.preventDefault();
       e.stopPropagation();
       if (this.touchId !== null) return;
@@ -807,6 +1088,7 @@
   const standardButtons = document.querySelectorAll("[data-btn]:not(.dpad-btn)");
   standardButtons.forEach((el) => {
     el.addEventListener("touchstart", (e) => {
+      if (window.isEditLayoutMode) return;
       e.preventDefault();
       e.stopPropagation();
       for (let i = 0; i < e.changedTouches.length; i++) {
@@ -835,6 +1117,7 @@
 
     // Desktop mouse fallback (guarded from synthetic touch events)
     el.addEventListener("mousedown", (e) => {
+      if (window.isEditLayoutMode) return;
       if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
       e.preventDefault();
       pressButton(el, "mouse_" + el.dataset.btn);
@@ -854,6 +1137,7 @@
 
   // Global touchmove to allow smooth sliding between action buttons
   window.addEventListener("touchmove", (e) => {
+    if (window.isEditLayoutMode) return;
     for (let i = 0; i < e.changedTouches.length; i++) {
       const touch = e.changedTouches[i];
       if (activeBtnTouches.has(touch.identifier)) {
@@ -872,7 +1156,7 @@
   // --- ZERO-LAG ANALOG STICK ENGINE ---
   class TouchStick {
     constructor(zoneId, knobId, stickCode) {
-      this.zone = document.getElementById(zoneId);
+      this.zone = document.getElementById(zoneId) || document.getElementById(zoneId.replace("cluster-", "") + "-zone");
       this.knob = document.getElementById(knobId);
       this.stickCode = stickCode;
       this.touchId = null;
@@ -890,6 +1174,7 @@
       // Desktop Mouse Fallback
       let isMouseDown = false;
       this.zone.addEventListener("mousedown", (e) => {
+        if (window.isEditLayoutMode) return;
         if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
         isMouseDown = true;
         const rect = this.zone.getBoundingClientRect();
@@ -912,6 +1197,7 @@
     }
 
     onTouchStart(e) {
+      if (window.isEditLayoutMode) return;
       e.preventDefault();
       e.stopPropagation();
       if (this.touchId !== null) return;
@@ -991,8 +1277,12 @@
   }
 
   // Initialize Analog Sticks
-  new TouchStick("left-stick-zone", "left-knob", "L");
-  new TouchStick("right-stick-zone", "right-knob", "R");
+  new TouchStick("cluster-lstick", "left-knob", "L");
+  new TouchStick("cluster-rstick", "right-knob", "R");
+
+  // Initialize Draggable Clusters & Load Saved Settings / Layout
+  initClusterDraggable();
+  loadSavedSettings();
 
   // Prevent default scroll & zoom gestures on the whole viewport
   document.addEventListener("gesturestart", (e) => e.preventDefault());

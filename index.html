@@ -175,29 +175,31 @@
       </div>
       <div class="center-meta">
         <span id="ping-text">0 ms</span>
-        <div class="top-actions">
-          <button id="btn-open-download-modal" class="icon-btn" title="Menu Download APK" type="button" style="display: flex; align-items: center; justify-content: center;">📥</button>
-          <button id="btn-vibrate" class="icon-btn active" title="Getar">📳</button>
-          <button id="btn-fullscreen" class="icon-btn" title="Layar Penuh">⛶</button>
-        </div>
       </div>
-      <div class="top-right-meta">
-        <span class="pad-id-label">AIRPAD</span>
+      <div class="top-actions">
+        <button id="btn-open-settings" class="icon-btn-pill" title="Pengaturan & Kustomisasi Tombol" type="button">
+          <span>⚙️</span>
+          <span class="btn-text-sm">Menu</span>
+        </button>
+        <button id="btn-disconnect" class="icon-btn-pill danger" title="Putus Sambungan / Keluar" type="button">
+          <span>🚪</span>
+          <span class="btn-text-sm">Keluar</span>
+        </button>
       </div>
     </header>
 
     <!-- Shoulder Buttons -->
     <div class="shoulders-bar">
-      <div class="shoulder-group left">
+      <div class="shoulder-group left" id="cluster-lshoulders">
         <div class="btn-shoulder" data-btn="L2" id="btn-l2">L2</div>
         <div class="btn-shoulder" data-btn="L1" id="btn-l1">L1</div>
       </div>
-      <div class="center-buttons">
-        <div class="btn-pill" data-btn="SELECT" id="btn-select">SHARE</div>
-        <div class="btn-ps" data-btn="PS" id="btn-ps">PS</div>
-        <div class="btn-pill" data-btn="START" id="btn-start">OPTIONS</div>
+      <div class="center-buttons" id="cluster-center">
+        <div class="btn-pill" data-btn="SELECT" id="btn-select">SELECT</div>
+        <div class="btn-ps" data-btn="PS" id="btn-ps">HOME</div>
+        <div class="btn-pill" data-btn="START" id="btn-start">START</div>
       </div>
-      <div class="shoulder-group right">
+      <div class="shoulder-group right" id="cluster-rshoulders">
         <div class="btn-shoulder" data-btn="R1" id="btn-r1">R1</div>
         <div class="btn-shoulder" data-btn="R2" id="btn-r2">R2</div>
       </div>
@@ -207,7 +209,7 @@
     <main class="controls-grid">
       <!-- Left Controls: D-Pad & Left Stick -->
       <section class="control-zone left-zone">
-        <div class="dpad-wrapper">
+        <div class="dpad-wrapper" id="cluster-dpad">
           <div class="dpad-btn up" data-btn="UP">▲</div>
           <div class="dpad-btn left" data-btn="LEFT">◀</div>
           <div class="dpad-center"></div>
@@ -215,7 +217,7 @@
           <div class="dpad-btn down" data-btn="DOWN">▼</div>
         </div>
 
-        <div class="joystick-container" id="left-stick-zone">
+        <div class="joystick-container" id="cluster-lstick">
           <div class="joystick-base">
             <div class="joystick-knob" id="left-knob">L3</div>
           </div>
@@ -224,13 +226,13 @@
 
       <!-- Right Controls: Right Stick & Action Buttons -->
       <section class="control-zone right-zone">
-        <div class="joystick-container" id="right-stick-zone">
+        <div class="joystick-container" id="cluster-rstick">
           <div class="joystick-base">
             <div class="joystick-knob" id="right-knob">R3</div>
           </div>
         </div>
 
-        <div class="action-wrapper">
+        <div class="action-wrapper" id="cluster-actions">
           <div class="action-btn triangle" data-btn="TRIANGLE">▲</div>
           <div class="action-btn square" data-btn="SQUARE">■</div>
           <div class="action-btn circle" data-btn="CIRCLE">●</div>
@@ -238,6 +240,82 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- Settings & Customization Modal -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal-card settings-card">
+      <div class="settings-header">
+        <div class="settings-title-row">
+          <span style="font-size: 20px;">⚙️</span>
+          <h3>Pengaturan Gamepad</h3>
+        </div>
+        <button id="btn-close-settings" class="modal-close-btn" type="button">✕</button>
+      </div>
+
+      <div class="settings-body">
+        <!-- Setting Item 1: Haptic Vibration -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <strong>📳 Getar Tombol (Haptic)</strong>
+            <span>Getaran saat tombol ditekan</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-vibrate" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Setting Item 2: Button Size Scale -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <strong>📐 Ukuran Tombol</strong>
+            <span>Sesuaikan skala ukuran stik</span>
+          </div>
+          <div class="scale-btn-group">
+            <button type="button" class="scale-btn active" data-scale="1.0">Normal</button>
+            <button type="button" class="scale-btn" data-scale="1.15">Besar</button>
+            <button type="button" class="scale-btn" data-scale="1.3">Ekstra</button>
+          </div>
+        </div>
+
+        <!-- Setting Item 3: Custom Layout Position -->
+        <div class="setting-item action-item">
+          <div class="setting-info">
+            <strong>✏️ Atur Posisi Tombol (Custom HUD)</strong>
+            <span>Geser letak tombol sesuka lo</span>
+          </div>
+          <button type="button" id="btn-start-edit-layout" class="btn-accent-sm">
+            <span>✏️ Edit Posisi</span>
+          </button>
+        </div>
+
+        <!-- Setting Item 4: Disconnect Controller -->
+        <div class="setting-item action-item danger-item">
+          <div class="setting-info">
+            <strong>🚪 Putus Sambungan (Out Device)</strong>
+            <span>Lepas stik dan keluar ke menu awal</span>
+          </div>
+          <button type="button" id="btn-settings-disconnect" class="btn-danger-sm">
+            <span>Keluar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Layout Mode Top Bar -->
+  <div id="edit-layout-hud" class="edit-layout-hud hidden">
+    <div class="edit-hud-title">
+      <span class="edit-dot"></span>
+      <strong>MODE ATUR POSISI</strong>
+      <span class="edit-sub">Geser tombol dengan jari</span>
+    </div>
+    <div class="edit-hud-actions">
+      <button type="button" id="btn-reset-layout" class="btn-edit-action reset">🔄 Default</button>
+      <button type="button" id="btn-cancel-layout" class="btn-edit-action cancel">✕ Batal</button>
+      <button type="button" id="btn-save-layout" class="btn-edit-action save">💾 Simpan</button>
+    </div>
   </div>
 
   <script src="jsqr.min.js"></script>
