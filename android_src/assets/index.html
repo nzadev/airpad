@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>AirPad - Virtual Gamepad Pro</title>
+  <title>AirPad - Virtual Gamepad</title>
   <link rel="stylesheet" href="style.css?v=2.2">
   <link rel="manifest" href="manifest.json">
   <script>
@@ -48,7 +48,7 @@
     <div class="modal-card">
       <button id="modal-close-btn" class="modal-close-btn" title="Tutup">✕</button>
 
-      <!-- Connect View -->
+      <!-- Connect Tab Content -->
       <div id="tab-pane-connect" class="tab-pane active">
         <div class="connect-grid">
           <!-- Left Column: Fast Action / QR & Status -->
@@ -100,9 +100,8 @@
     </div>
   </div>
 
-  <!-- Gamepad Layout Container -->
-  <div id="gamepad-container" class="gamepad-wrapper">
-    <!-- Top Bar: Status, Ping, Settings -->
+  <div id="gamepad-container">
+    <!-- Top Bar Status -->
     <header class="top-nav">
       <div class="status-badge" id="player-badge">
         <span class="dot"></span>
@@ -136,42 +135,38 @@
       </div>
     </div>
 
-    <!-- Main Gamepad Surface -->
-    <main class="gamepad-surface">
+    <!-- Main Gamepad Area -->
+    <main class="controls-grid">
       <!-- Left Controls: D-Pad & Left Stick -->
       <section class="control-zone left-zone">
-        <div class="dpad" id="cluster-dpad">
-          <div class="dpad-cross">
-            <div class="dpad-btn up" data-btn="UP" id="btn-up">▲</div>
-            <div class="dpad-btn left" data-btn="LEFT" id="btn-left">◀</div>
-            <div class="dpad-btn center"></div>
-            <div class="dpad-btn right" data-btn="RIGHT" id="btn-right">▶</div>
-            <div class="dpad-btn down" data-btn="DOWN" id="btn-down">▼</div>
-          </div>
+        <div class="dpad-wrapper" id="cluster-dpad">
+          <div class="dpad-btn up" data-btn="UP">▲</div>
+          <div class="dpad-btn left" data-btn="LEFT">◀</div>
+          <div class="dpad-center"></div>
+          <div class="dpad-btn right" data-btn="RIGHT">▶</div>
+          <div class="dpad-btn down" data-btn="DOWN">▼</div>
         </div>
 
-        <div class="analog-container" id="cluster-lstick">
-          <div class="analog-base" id="lstick-base">
-            <div class="analog-stick" id="lstick-stick"></div>
+        <div class="joystick-container" id="cluster-lstick">
+          <div class="joystick-base">
+            <div class="joystick-knob" id="left-knob">L3</div>
           </div>
-          <span class="stick-label">L3</span>
         </div>
       </section>
 
       <!-- Right Controls: Right Stick & Action Buttons -->
       <section class="control-zone right-zone">
-        <div class="analog-container" id="cluster-rstick">
-          <div class="analog-base" id="rstick-base">
-            <div class="analog-stick" id="rstick-stick"></div>
+        <div class="joystick-container" id="cluster-rstick">
+          <div class="joystick-base">
+            <div class="joystick-knob" id="right-knob">R3</div>
           </div>
-          <span class="stick-label">R3</span>
         </div>
 
-        <div class="action-buttons" id="cluster-actions">
-          <div class="action-btn triangle" data-btn="TRIANGLE" id="btn-triangle">▲</div>
-          <div class="action-btn circle" data-btn="CIRCLE" id="btn-circle">●</div>
-          <div class="action-btn cross" data-btn="CROSS" id="btn-cross">✕</div>
-          <div class="action-btn square" data-btn="SQUARE" id="btn-square">■</div>
+        <div class="action-wrapper" id="cluster-actions">
+          <div class="action-btn triangle" data-btn="TRIANGLE">▲</div>
+          <div class="action-btn square" data-btn="SQUARE">■</div>
+          <div class="action-btn circle" data-btn="CIRCLE">●</div>
+          <div class="action-btn cross" data-btn="CROSS">✕</div>
         </div>
       </section>
     </main>
@@ -179,15 +174,15 @@
     <!-- Visual Bounding Walls for Edit Mode -->
     <div id="edit-mode-walls" class="edit-walls-container">
       <div class="wall-box wall-left">
-        <span class="wall-tag">ZONA KIRI: D-PAD & L-STICK</span>
+        <span class="wall-tag">◀ BATAS ZONA KIRI (DPAD & L3)</span>
       </div>
       <div class="wall-divider">
         <div class="wall-divider-line"></div>
-        <span class="wall-divider-badge">╪ DINDING TENGAH PEMBATAS ╪</span>
+        <span class="wall-divider-badge">╪ DINDING PEMBATAS ╪</span>
         <div class="wall-divider-line"></div>
       </div>
       <div class="wall-box wall-right">
-        <span class="wall-tag">ZONA KANAN: ACTIONS & R-STICK</span>
+        <span class="wall-tag">BATAS ZONA KANAN (AKSI & R3) ▶</span>
       </div>
     </div>
   </div>
@@ -196,8 +191,8 @@
   <div id="settings-modal" class="modal-overlay hidden">
     <div class="modal-card settings-card">
       <div class="settings-header">
-        <div class="settings-title-group">
-          <span class="game-badge">KONTROL & TAMPILAN</span>
+        <div class="settings-title-row">
+          <span style="font-size: 20px;">⚙️</span>
           <h3>Pengaturan Gamepad</h3>
         </div>
         <button id="btn-close-settings" class="modal-close-btn" type="button" aria-label="Tutup">✕</button>
