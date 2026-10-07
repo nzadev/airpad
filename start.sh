@@ -5,13 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT="${PORT:-8080}"
 CF_LOG="/tmp/cloudflared_webgamepad.log"
 
-# Ambil pairing code tersimpan dari config.json jika ada, atau buat baru jika belum ada
-if [[ -z "${AIRPAD_CODE:-}" && -f "$SCRIPT_DIR/config.json" ]]; then
-    SAVED_CODE=$(jq -r '.code // empty' "$SCRIPT_DIR/config.json" 2>/dev/null || true)
-    if [[ -n "$SAVED_CODE" && "$SAVED_CODE" != "----" && "$SAVED_CODE" != "null" ]]; then
-        AIRPAD_CODE="$SAVED_CODE"
-    fi
-fi
+# Generate 4-digit pairing code (1000 - 9999) jika belum di-set
 export AIRPAD_CODE="${AIRPAD_CODE:-$((RANDOM % 9000 + 1000))}"
 
 cleanup() {

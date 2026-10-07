@@ -345,13 +345,14 @@
     <div class="card">
       <div class="card-title">📷 SCAN UNTUK KONEK LANGSUNG</div>
       <div class="qr-tabs">
-        <button id="tab-cloud" class="qr-tab-btn active" onclick="setQrMode('cloud')">🌐 Cloudflare (Publik)</button>
-        <button id="tab-local" class="qr-tab-btn" onclick="setQrMode('local')">🏠 Wi-Fi Lokal (0ms)</button>
+        <button id="tab-cloud" class="qr-tab-btn active" onclick="setQrMode('cloud')">🌐 Cloudflare</button>
+        <button id="tab-local" class="qr-tab-btn" onclick="setQrMode('local')">🏠 Wi-Fi Lokal</button>
+        <button id="tab-apk" class="qr-tab-btn" onclick="setQrMode('apk')">📥 Unduh APK</button>
       </div>
       <div class="qr-container">
         <img id="qr-img" src="/api/qr?mode=cloud" alt="QR Code" onerror="this.src='qr_connect.png'">
       </div>
-      <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+      <p id="qr-hint-text" style="font-size: 12px; color: #94a3b8; text-align: center;">
         Buka aplikasi <strong>AirPad</strong> di HP lalu tap <strong>[SCAN QR PC]</strong>
       </p>
 
@@ -368,6 +369,10 @@
         <div class="url-item">
           <span id="local-url">🏠 Wi-Fi Lokal: Loading...</span>
           <button class="btn-copy" onclick="copyText('local-url')">Salin</button>
+        </div>
+        <div class="url-item">
+          <span id="apk-url">📥 APK HP: AirPad.apk (77 KB)</span>
+          <button class="btn-copy" onclick="copyDirect('https://nzadev.github.io/airpad/AirPad.apk')">Salin</button>
         </div>
       </div>
     </div>
@@ -392,6 +397,15 @@
       currentQrMode = mode;
       document.getElementById('tab-cloud').classList.toggle('active', mode === 'cloud');
       document.getElementById('tab-local').classList.toggle('active', mode === 'local');
+      document.getElementById('tab-apk').classList.toggle('active', mode === 'apk');
+
+      const hintEl = document.getElementById('qr-hint-text');
+      if (mode === 'apk') {
+        hintEl.innerHTML = 'Arahkan kamera HP ke QR untuk <strong>langsung unduh APK</strong>';
+      } else {
+        hintEl.innerHTML = 'Buka aplikasi <strong>AirPad</strong> di HP lalu tap <strong>[SCAN QR PC]</strong>';
+      }
+
       document.getElementById('qr-img').src = `/api/qr?mode=${currentQrMode}&_t=${Date.now()}`;
     }
 
@@ -399,6 +413,11 @@
       const text = document.getElementById(elemId).textContent.replace(/^[^:]+:\s*/, "");
       navigator.clipboard.writeText(text);
       alert("Tersalin: " + text);
+    }
+
+    function copyDirect(text) {
+      navigator.clipboard.writeText(text);
+      alert("Tersalin ke clipboard: " + text);
     }
 
     const PLAYER_THEMES = {

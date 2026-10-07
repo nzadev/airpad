@@ -267,10 +267,23 @@ async def monitor_handler(request):
         monitors.discard(ws)
     return ws
 
+async def download_apk_handler(request):
+    apk_file = os.path.join(os.path.dirname(__file__), "static", "AirPad.apk")
+    if not os.path.exists(apk_file):
+        apk_file = os.path.join(os.path.dirname(__file__), "AirPad.apk")
+    if os.path.exists(apk_file):
+        return web.FileResponse(apk_file, headers={
+            "Content-Disposition": 'attachment; filename="AirPad.apk"',
+            "Content-Type": "application/vnd.android.package-archive"
+        })
+    return web.Response(text="APK file not found", status=404)
+
 async def qr_handler(request):
     mode = request.query.get("mode", "cloud")
     tunnel, local_ip = get_server_metadata()
-    if mode == "local":
+    if mode == "apk":
+        target = "https://nzadev.github.io/airpad/AirPad.apk"
+    elif mode == "local":
         target = f"airpad://connect?code={PAIR_CODE}&server={local_ip}"
     elif mode == "web":
         target = f"https://nzadev.github.io/airpad/?code={PAIR_CODE}&server={tunnel}"
@@ -290,6 +303,9 @@ async def qr_handler(request):
 async def init_app():
     app = web.Application()
     app.router.add_get("/", index_handler)
+    app.router.add_get("/download", download_apk_handler)
+    app.router.add_get("/AirPad.apk", download_apk_handler)
+    app.router.add_get("/airpad.apk", download_apk_handler)
     app.router.add_get("/dashboard", dashboard_handler)
     app.router.add_get("/api/status", status_handler)
     app.router.add_get("/api/qr", qr_handler)

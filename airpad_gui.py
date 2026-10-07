@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtWebSockets import QWebSocket
 
-BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 STYLE_SHEET = """
 QMainWindow {
@@ -146,25 +146,11 @@ class AirPadMainWindow(QMainWindow):
         self.init_ui()
         self.load_initial_config()
 
-        self.check_and_start_server()
-
         self.poll_worker = ServerPollWorker()
         self.poll_worker.status_updated.connect(self.on_status_updated)
         self.poll_worker.start()
 
         self.setup_websocket()
-
-    def check_and_start_server(self):
-        try:
-            req = Request("http://127.0.0.1:8080/api/status", headers={"User-Agent": "AirPadGUI"})
-            with urlopen(req, timeout=0.6) as res:
-                if res.status == 200:
-                    return
-        except Exception:
-            pass
-        start_sh = os.path.join(BASE_DIR, "start.sh")
-        if os.path.exists(start_sh):
-            subprocess.Popen([start_sh], cwd=BASE_DIR)
 
     def load_initial_config(self):
         cfg_path = os.path.join(BASE_DIR, "config.json")
@@ -237,19 +223,25 @@ class AirPadMainWindow(QMainWindow):
 
         # QR Mode Selector Buttons
         qr_tabs = QHBoxLayout()
-        qr_tabs.setSpacing(8)
-        self.btn_mode_cloud = QPushButton("🌐 Cloudflare (Publik)")
+        qr_tabs.setSpacing(6)
+        self.btn_mode_cloud = QPushButton("🌐 Cloudflare")
         self.btn_mode_cloud.setProperty("class", "btn-secondary")
-        self.btn_mode_cloud.setStyleSheet("background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8; font-weight: 700;")
+        self.btn_mode_cloud.setStyleSheet("background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8; font-weight: 700; font-size: 11px;")
         self.btn_mode_cloud.clicked.connect(lambda: self.set_qr_mode("cloud"))
 
-        self.btn_mode_local = QPushButton("🏠 Wi-Fi Lokal (0ms)")
+        self.btn_mode_local = QPushButton("🏠 Wi-Fi Lokal")
         self.btn_mode_local.setProperty("class", "btn-secondary")
-        self.btn_mode_local.setStyleSheet("background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.12); color: #94a3b8; font-weight: 700;")
+        self.btn_mode_local.setStyleSheet("background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.12); color: #94a3b8; font-weight: 700; font-size: 11px;")
         self.btn_mode_local.clicked.connect(lambda: self.set_qr_mode("local"))
+
+        self.btn_mode_apk = QPushButton("📥 Unduh APK")
+        self.btn_mode_apk.setProperty("class", "btn-secondary")
+        self.btn_mode_apk.setStyleSheet("background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.12); color: #94a3b8; font-weight: 700; font-size: 11px;")
+        self.btn_mode_apk.clicked.connect(lambda: self.set_qr_mode("apk"))
 
         qr_tabs.addWidget(self.btn_mode_cloud)
         qr_tabs.addWidget(self.btn_mode_local)
+        qr_tabs.addWidget(self.btn_mode_apk)
         card_left_layout.addLayout(qr_tabs)
 
         # QR Code Display
@@ -259,10 +251,10 @@ class AirPadMainWindow(QMainWindow):
         self.lbl_qr_image.setFixedSize(210, 210)
         card_left_layout.addWidget(self.lbl_qr_image, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        lbl_qr_hint = QLabel("Buka aplikasi AirPad di HP lalu tap [SCAN QR PC]")
-        lbl_qr_hint.setStyleSheet("font-size: 11px; color: #94a3b8; text-align: center;")
-        lbl_qr_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        card_left_layout.addWidget(lbl_qr_hint)
+        self.lbl_qr_hint = QLabel("Buka aplikasi AirPad di HP lalu tap [SCAN QR PC]")
+        self.lbl_qr_hint.setStyleSheet("font-size: 11px; color: #94a3b8; text-align: center;")
+        self.lbl_qr_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card_left_layout.addWidget(self.lbl_qr_hint)
 
         # Code display box
         code_box = QVBoxLayout()
@@ -297,8 +289,18 @@ class AirPadMainWindow(QMainWindow):
         row_local.addWidget(self.lbl_local, 1)
         row_local.addWidget(btn_copy_local)
 
+        row_apk = QHBoxLayout()
+        self.lbl_apk = QLabel("📥 APK HP: AirPad.apk (77 KB)")
+        self.lbl_apk.setStyleSheet("font-size: 11px; color: #94a3b8;")
+        btn_copy_apk = QPushButton("Salin")
+        btn_copy_apk.setProperty("class", "btn-secondary")
+        btn_copy_apk.clicked.connect(self.copy_apk)
+        row_apk.addWidget(self.lbl_apk, 1)
+        row_apk.addWidget(btn_copy_apk)
+
         urls_layout.addLayout(row_tunnel)
         urls_layout.addLayout(row_local)
+        urls_layout.addLayout(row_apk)
         card_left_layout.addLayout(urls_layout)
 
         grid_layout.addWidget(card_left, 1)
@@ -352,12 +354,17 @@ class AirPadMainWindow(QMainWindow):
 
     def set_qr_mode(self, mode):
         self.qr_mode = mode
-        if mode == "cloud":
-            self.btn_mode_cloud.setStyleSheet("background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8; font-weight: 700;")
-            self.btn_mode_local.setStyleSheet("background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.12); color: #94a3b8; font-weight: 700;")
+        active_style = "background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8; font-weight: 700; font-size: 11px;"
+        inactive_style = "background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.12); color: #94a3b8; font-weight: 700; font-size: 11px;"
+
+        self.btn_mode_cloud.setStyleSheet(active_style if mode == "cloud" else inactive_style)
+        self.btn_mode_local.setStyleSheet(active_style if mode == "local" else inactive_style)
+        self.btn_mode_apk.setStyleSheet(active_style if mode == "apk" else inactive_style)
+
+        if mode == "apk":
+            self.lbl_qr_hint.setText("Arahkan kamera HP ke QR untuk langsung download APK")
         else:
-            self.btn_mode_local.setStyleSheet("background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8; font-weight: 700;")
-            self.btn_mode_cloud.setStyleSheet("background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.12); color: #94a3b8; font-weight: 700;")
+            self.lbl_qr_hint.setText("Buka aplikasi AirPad di HP lalu tap [SCAN QR PC]")
         self.update_qr_image()
 
     def on_ws_message(self, message):
@@ -470,11 +477,14 @@ class AirPadMainWindow(QMainWindow):
                 self.set_player_state(p, p in players)
 
     def update_qr_image(self):
-        target_server = self.current_local_ip if self.qr_mode == "local" else self.current_tunnel
-        if not target_server or self.current_code == "----":
-            return
+        if self.qr_mode == "apk":
+            qr_payload = "https://nzadev.github.io/airpad/AirPad.apk"
+        else:
+            target_server = self.current_local_ip if self.qr_mode == "local" else self.current_tunnel
+            if not target_server or self.current_code == "----":
+                return
+            qr_payload = f"airpad://connect?code={self.current_code}&server={target_server}"
 
-        qr_payload = f"airpad://connect?code={self.current_code}&server={target_server}"
         try:
             res = subprocess.run(
                 ["qrencode", "-o", "-", "-s", "8", "-m", "2", qr_payload],
@@ -496,6 +506,11 @@ class AirPadMainWindow(QMainWindow):
         if self.current_local_ip:
             QApplication.clipboard().setText(f"http://{self.current_local_ip}/?code={self.current_code}")
             QMessageBox.information(self, "Tersalin", "Link Wi-Fi lokal berhasil disalin ke clipboard!")
+
+    def copy_apk(self):
+        url = "https://nzadev.github.io/airpad/AirPad.apk"
+        QApplication.clipboard().setText(url)
+        QMessageBox.information(self, "Tersalin", f"Link Download APK berhasil disalin ke clipboard:\n{url}")
 
     def open_dashboard(self):
         subprocess.Popen(["xdg-open", "http://127.0.0.1:8080/dashboard"])

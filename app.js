@@ -98,12 +98,25 @@
     localStorage.removeItem("airpad_server");
   }
 
-  // Check URL query parameters (e.g. ?code=1234&server=...)
+  // Check URL query parameters (e.g. ?code=1234&server=... or ?download=1)
   const urlParams = new URLSearchParams(window.location.search);
   const paramCode = urlParams.get("code") || localStorage.getItem("airpad_code") || "";
   const paramServer = urlParams.get("server") || "";
+  const paramDownload = urlParams.has("download") || location.hash === "#download";
 
   if (paramCode) inputCode.value = paramCode;
+
+  if (paramDownload && !isNativeApp) {
+    switchTab("download");
+    setTimeout(() => {
+      const dlLink = document.createElement("a");
+      dlLink.href = "AirPad.apk";
+      dlLink.download = "AirPad.apk";
+      document.body.appendChild(dlLink);
+      dlLink.click();
+      document.body.removeChild(dlLink);
+    }, 450);
+  }
 
   function cleanHost(str) {
     if (!str) return "";
