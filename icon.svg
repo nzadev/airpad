@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="128" fill="#0d1117"/>
+  <path d="M160 180 C110 180, 80 220, 80 300 C80 380, 130 420, 180 400 L210 360 L302 360 L332 400 C382 420, 432 380, 432 300 C432 220, 402 180, 352 180 Z" fill="#1e293b" stroke="#3b82f6" stroke-width="16"/>
+  <!-- D-Pad -->
+  <rect x="135" y="250" width="30" height="70" rx="6" fill="#3b82f6"/>
+  <rect x="115" y="270" width="70" height="30" rx="6" fill="#3b82f6"/>
+  <!-- Action Buttons -->
+  <circle cx="345" cy="255" r="14" fill="#10b981"/>
+  <circle cx="375" cy="285" r="14" fill="#ef4444"/>
+  <circle cx="345" cy="315" r="14" fill="#3b82f6"/>
+  <circle cx="315" cy="285" r="14" fill="#ec4899"/>
+  <!-- Sticks -->
+  <circle cx="210" cy="315" r="28" fill="#0f172a" stroke="#475569" stroke-width="6"/>
+  <circle cx="302" cy="315" r="28" fill="#0f172a" stroke="#475569" stroke-width="6"/>
+</svg>
