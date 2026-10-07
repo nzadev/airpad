@@ -63,15 +63,21 @@ body, html {
 .modal-overlay {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
   background: rgba(6, 8, 15, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   z-index: 8888;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 16px;
+  align-items: flex-start;
+  padding: 12px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
 }
 
 .modal-overlay.hidden {
@@ -80,17 +86,21 @@ body, html {
 
 .modal-card {
   position: relative;
+  margin: auto;
   background: linear-gradient(165deg, #131728 0%, #090c16 100%);
   border: 1.5px solid rgba(59, 130, 246, 0.3);
   border-radius: 20px;
   padding: 18px 22px;
   width: 95%;
   max-width: 620px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
   text-align: left;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(59, 130, 246, 0.15);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-sizing: border-box;
 }
 
 .modal-close-btn {
@@ -802,12 +812,19 @@ body, html {
 
 /* Main Container */
 #gamepad-container {
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
   display: flex;
   flex-direction: column;
   background: radial-gradient(circle at center, #171926 0%, #0a0b12 100%);
-  padding: 10px 16px;
+  padding: 8px 14px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* Top Nav */
@@ -1384,6 +1401,163 @@ body, html {
 
 .btn-danger-sm:active {
   transform: scale(0.95);
+}
+
+/* Responsive Landscape Mode: 2-Column Grid for Settings & Compact View */
+@media (orientation: landscape) and (max-height: 520px) {
+  .modal-overlay {
+    padding: 8px;
+    align-items: center;
+  }
+  .modal-card {
+    max-height: calc(100dvh - 16px);
+    padding: 12px 18px;
+    gap: 8px;
+  }
+  .settings-card {
+    max-width: 640px;
+    padding: 12px 18px;
+  }
+  .settings-header {
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+  }
+  .settings-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+  }
+  .setting-item {
+    padding: 8px 12px;
+  }
+  .setting-info strong {
+    font-size: 13px;
+  }
+  .setting-info span {
+    font-size: 10px;
+  }
+  .scale-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+  .btn-accent-sm,
+  .btn-danger-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .apk-recommend-banner {
+    padding: 6px 10px;
+  }
+  .connect-grid {
+    gap: 10px;
+  }
+  .code-field-wrapper input {
+    height: 42px;
+    font-size: 18px;
+  }
+}
+
+/* Responsive Scaling for Short Mobile Viewports in Landscape */
+@media (max-height: 420px) {
+  #gamepad-container {
+    padding: 4px 12px;
+  }
+  .top-nav {
+    height: 30px;
+    padding: 0 8px;
+  }
+  .shoulders-bar {
+    margin-top: 2px;
+    padding: 0 4px;
+  }
+  .btn-shoulder {
+    width: 72px;
+    height: 38px;
+    font-size: 12px;
+  }
+  .btn-shoulder[data-btn="L2"],
+  .btn-shoulder[data-btn="R2"] {
+    height: 42px;
+  }
+  .controls-grid {
+    padding: 2px 8px 8px 8px;
+  }
+  .control-zone {
+    gap: 16px;
+  }
+  .dpad-wrapper {
+    transform: scale(0.9);
+    transform-origin: left center;
+  }
+  .joystick-container {
+    transform: scale(0.9);
+  }
+  .action-wrapper {
+    transform: scale(0.9);
+    transform-origin: right center;
+  }
+}
+
+@media (max-height: 340px) {
+  #gamepad-container {
+    padding: 2px 8px;
+  }
+  .top-nav {
+    height: 26px;
+  }
+  .btn-shoulder {
+    width: 62px;
+    height: 32px;
+    font-size: 11px;
+  }
+  .btn-shoulder[data-btn="L2"],
+  .btn-shoulder[data-btn="R2"] {
+    height: 36px;
+  }
+  .btn-ps {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+  .btn-pill {
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+  .control-zone {
+    gap: 10px;
+  }
+  .dpad-wrapper {
+    transform: scale(0.8);
+    transform-origin: left center;
+  }
+  .joystick-container {
+    transform: scale(0.8);
+  }
+  .action-wrapper {
+    transform: scale(0.8);
+    transform-origin: right center;
+  }
+}
+
+/* Adaptive Portrait Mode Fallback (If user chooses portrait or narrow window) */
+@media (orientation: portrait), (max-width: 650px) {
+  .controls-grid {
+    justify-content: space-between;
+    padding: 4px 8px;
+  }
+  .control-zone {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .dpad-wrapper {
+    transform: scale(0.85);
+  }
+  .joystick-container {
+    transform: scale(0.85);
+  }
+  .action-wrapper {
+    transform: scale(0.85);
+  }
 }
 
 /* Custom Layout HUD */

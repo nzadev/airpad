@@ -313,15 +313,32 @@
   async function enterFullscreen() {
     try {
       if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
+        await document.documentElement.requestFullscreen().catch(() => {});
       }
       if (screen.orientation && screen.orientation.lock) {
         await screen.orientation.lock("landscape").catch(() => {});
       }
     } catch (e) {}
+    if (landscapeWarning) landscapeWarning.style.display = "none";
+    if (document.activeElement) document.activeElement.blur();
   }
 
   if (btnForceFs) btnForceFs.addEventListener("click", enterFullscreen);
+
+  window.addEventListener("orientationchange", () => {
+    if (document.activeElement && document.activeElement.tagName === "INPUT") {
+      document.activeElement.blur();
+    }
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 150);
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > window.innerHeight) {
+      if (landscapeWarning) landscapeWarning.style.display = "none";
+    }
+  });
 
   // --- OUT DEVICE / DISCONNECT CONTROLLER ---
   function disconnectDevice() {
@@ -419,6 +436,7 @@
 
   if (btnPreviewGamepad) {
     addTapListener(btnPreviewGamepad, () => {
+      if (document.activeElement) document.activeElement.blur();
       if (authModal) authModal.classList.add("hidden");
       haptic(25);
     });
@@ -996,6 +1014,7 @@
   }
 
   btnSubmitCode.addEventListener("click", () => {
+    if (document.activeElement) document.activeElement.blur();
     const code = inputCode.value.trim();
     if (!code) {
       authError.textContent = "Masukkan 4 digit kode terlebih dahulu!";
