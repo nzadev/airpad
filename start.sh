@@ -22,9 +22,9 @@ echo ">> Menjalankan Web Gamepad Server (Kode: $AIRPAD_CODE)..."
 python3 "$SCRIPT_DIR/server.py" &
 SERVER_PID=$!
 
-echo ">> Menjalankan Cloudflare Tunnel untuk akses beda jaringan..."
+echo ">> Menjalankan Cloudflare Tunnel (HTTP/2 mode untuk WebSocket)..."
 rm -f "$CF_LOG"
-cloudflared tunnel --url "http://127.0.0.1:$PORT" > "$CF_LOG" 2>&1 &
+cloudflared tunnel --protocol http2 --url "http://127.0.0.1:$PORT" > "$CF_LOG" 2>&1 &
 CF_PID=$!
 
 echo ">> Menghubungkan ke internet publik..."

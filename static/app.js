@@ -157,7 +157,7 @@
     }
 
     let host = activeServerHost || location.host;
-    if (inputServer.value.trim()) {
+    if (serverInputGroup && serverInputGroup.style.display !== "none" && inputServer.value.trim()) {
       host = inputServer.value.trim().replace(/^https?:\/\//, "").replace(/^wss?:\/\//, "").replace(/\/.*$/, "");
     }
     const proto = (isExternalHost || location.protocol === "https:") ? "wss:" : "ws:";
