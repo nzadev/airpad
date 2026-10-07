@@ -16,7 +16,10 @@
       <div class="rotate-icon">📱 ➔ 🔄</div>
       <h2>Putar HP ke Mode Landscape</h2>
       <p>Posisikan HP horizontal untuk mengaktifkan stik controller</p>
-      <button id="btn-force-fs">Buka Fullscreen</button>
+      <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; justify-content: center;">
+        <button id="btn-force-fs">Buka Fullscreen</button>
+        <button id="btn-ignore-portrait" style="background: transparent; border: 1.5px solid #4b5563; color: #cbd5e1; padding: 12px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">Lanjut Portrait</button>
+      </div>
     </div>
   </div>
 
@@ -39,6 +42,11 @@
         <span id="server-status-label" style="color: #94a3b8; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Mendeteksi...</span>
         <button id="btn-toggle-server" type="button" style="background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 11px; padding: 0;">⚙️ Ubah</button>
       </div>
+      <div style="margin-top: 10px; border-top: 1px solid #1e293b; padding-top: 10px; width: 100%;">
+        <a href="AirPad.apk" download style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #1e293b; color: #60a5fa; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid #3b82f6;">
+          📥 Download APK Android (AirPad.apk)
+        </a>
+      </div>
     </div>
   </div>
 
@@ -53,7 +61,7 @@
         <span id="ping-text">0 ms</span>
       </div>
       <div class="top-actions">
-        <button id="btn-install" class="icon-btn" title="Install Aplikasi" style="display: none;">📥</button>
+        <a id="btn-download-apk" href="AirPad.apk" download class="icon-btn" title="Download APK Android" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">📥</a>
         <button id="btn-vibrate" class="icon-btn active" title="Getar">📳</button>
         <button id="btn-fullscreen" class="icon-btn" title="Layar Penuh">⛶</button>
       </div>

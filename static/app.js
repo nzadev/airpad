@@ -144,6 +144,14 @@
   btnFullscreen.addEventListener("click", enterFullscreen);
   btnForceFs.addEventListener("click", enterFullscreen);
 
+  const btnIgnorePortrait = document.getElementById("btn-ignore-portrait");
+  const landscapeWarning = document.getElementById("landscape-warning");
+  if (btnIgnorePortrait && landscapeWarning) {
+    btnIgnorePortrait.addEventListener("click", () => {
+      landscapeWarning.style.display = "none";
+    });
+  }
+
   // WebSocket Connection
   let connectionTimeout = null;
 
