@@ -9,6 +9,12 @@
   const pingText = document.getElementById("ping-text");
   const btnOpenSettings = document.getElementById("btn-open-settings");
   const btnDisconnect = document.getElementById("btn-disconnect");
+  const btnToggleScreen = document.getElementById("btn-toggle-screen");
+  const btnCropMode = document.getElementById("btn-crop-mode");
+  const cropBtnText = document.getElementById("crop-btn-text");
+  const gameStreamContainer = document.getElementById("game-stream-container");
+  const gameStreamImg = document.getElementById("game-stream-img");
+  const gamepadContainer = document.getElementById("gamepad-container");
 
   // Settings Modal & Custom Layout Elements
   const settingsModal = document.getElementById("settings-modal");
@@ -448,6 +454,9 @@
         } catch (e) {}
       }
     }
+    if (isStreamActive) {
+      toggleGameStream();
+    }
     if (ws) {
       try {
         send(["b", "SELECT", 0]);
@@ -610,6 +619,69 @@
       disconnectDevice();
     });
   }
+
+  // --- REMOTE SCREEN STREAMER & SPLIT-SCREEN CROP ENGINE ---
+  let isStreamActive = false;
+  const CROP_MODES = [
+    { id: "p2_v", label: "P2 Kanan" },
+    { id: "p2_h", label: "P2 Bawah" },
+    { id: "p1_v", label: "P1 Kiri" },
+    { id: "p1_h", label: "P1 Atas" },
+    { id: "full", label: "Full Layar" }
+  ];
+  let cropModeIndex = 0; // default: p2_v (Player 2 Vertical split)
+
+  function getStreamUrl() {
+    let base = "";
+    if (activeServerHost) {
+      if (activeServerHost.startsWith("http://") || activeServerHost.startsWith("https://")) {
+        base = activeServerHost;
+      } else {
+        const proto = location.protocol === "https:" ? "https://" : "http://";
+        base = proto + activeServerHost;
+      }
+    } else {
+      base = location.origin.startsWith("file:") ? "http://127.0.0.1:8080" : location.origin;
+    }
+    const cropId = CROP_MODES[cropModeIndex].id;
+    return `${base}/api/stream?crop=${cropId}&_t=${Date.now()}`;
+  }
+
+  function toggleGameStream() {
+    isStreamActive = !isStreamActive;
+    if (isStreamActive) {
+      if (gameStreamContainer) gameStreamContainer.classList.remove("hidden");
+      if (btnCropMode) btnCropMode.classList.remove("hidden");
+      if (btnToggleScreen) btnToggleScreen.classList.add("active-stream");
+      if (gamepadContainer) gamepadContainer.classList.add("streaming-active");
+      if (gameStreamImg) {
+        gameStreamImg.src = getStreamUrl();
+      }
+      haptic(35);
+    } else {
+      if (gameStreamContainer) gameStreamContainer.classList.add("hidden");
+      if (btnCropMode) btnCropMode.classList.add("hidden");
+      if (btnToggleScreen) btnToggleScreen.classList.remove("active-stream");
+      if (gamepadContainer) gamepadContainer.classList.remove("streaming-active");
+      if (gameStreamImg) {
+        gameStreamImg.src = "";
+      }
+      haptic(20);
+    }
+  }
+
+  function cycleCropMode() {
+    cropModeIndex = (cropModeIndex + 1) % CROP_MODES.length;
+    const current = CROP_MODES[cropModeIndex];
+    if (cropBtnText) cropBtnText.textContent = current.label;
+    if (isStreamActive && gameStreamImg) {
+      gameStreamImg.src = getStreamUrl();
+    }
+    haptic(25);
+  }
+
+  if (btnToggleScreen) addTapListener(btnToggleScreen, toggleGameStream);
+  if (btnCropMode) addTapListener(btnCropMode, cycleCropMode);
 
   if (toggleVibrate) {
     toggleVibrate.addEventListener("change", () => {

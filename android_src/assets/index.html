@@ -102,6 +102,11 @@
   </div>
 
   <div id="gamepad-container">
+    <!-- Remote Game Screen Stream Layer -->
+    <div id="game-stream-container" class="game-stream-container hidden">
+      <img id="game-stream-img" class="game-stream-img" alt="Game Stream" />
+    </div>
+
     <!-- Top Bar Status -->
     <header class="top-nav">
       <div class="status-badge" id="player-badge">
@@ -112,6 +117,14 @@
         <span id="ping-text">0 ms</span>
       </div>
       <div class="top-actions">
+        <button id="btn-toggle-screen" class="icon-btn-pill" title="Layar Game (Stardew Stream)" type="button">
+          <span>📺</span>
+          <span class="btn-text-sm" id="stream-btn-text">Layar</span>
+        </button>
+        <button id="btn-crop-mode" class="icon-btn-pill hidden" title="Ganti Mode Split Layar" type="button">
+          <span>✂️</span>
+          <span class="btn-text-sm" id="crop-btn-text">P2 Kanan</span>
+        </button>
         <button id="btn-open-settings" class="icon-btn-pill" title="Pengaturan & Kustomisasi Tombol" type="button">
           <span>⚙️</span>
           <span class="btn-text-sm">Menu</span>

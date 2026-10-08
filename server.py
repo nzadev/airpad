@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import subprocess
 import sys
 from aiohttp import web
 from evdev import UInput, AbsInfo, ecodes as e
@@ -366,6 +367,95 @@ async def qr_handler(request):
     except Exception as e:
         return web.Response(text=f"QR error: {e}", status=500)
 
+def get_screen_resolution():
+    try:
+        out = subprocess.check_output(["xrandr", "--current"], text=True)
+        for line in out.splitlines():
+            if "current" in line:
+                parts = line.split("current")
+                if len(parts) > 1:
+                    res = parts[1].split(",")[0].strip().split("x")
+                    return int(res[0]), int(res[1])
+    except Exception:
+        pass
+    return 1920, 1200
+
+async def stream_handler(request):
+    crop = request.query.get("crop", "p2_v")
+    fps = request.query.get("fps", "30")
+    try:
+        fps_val = min(60, max(15, int(fps)))
+    except ValueError:
+        fps_val = 30
+
+    w, h = get_screen_resolution()
+    if crop == "p2_v":
+        v_size = f"{w // 2}x{h}"
+        inp = f":0.0+{w // 2},0"
+    elif crop == "p1_v":
+        v_size = f"{w // 2}x{h}"
+        inp = ":0.0+0,0"
+    elif crop == "p2_h":
+        v_size = f"{w}x{h // 2}"
+        inp = f":0.0+0,{h // 2}"
+    elif crop == "p1_h":
+        v_size = f"{w}x{h // 2}"
+        inp = ":0.0+0,0"
+    else:
+        v_size = f"{w}x{h}"
+        inp = ":0.0+0,0"
+
+    cmd = [
+        "ffmpeg", "-nostdin",
+        "-f", "x11grab",
+        "-framerate", str(fps_val),
+        "-video_size", v_size,
+        "-i", inp,
+        "-vf", "scale=960:-1",
+        "-c:v", "mjpeg",
+        "-q:v", "6",
+        "-flush_packets", "1",
+        "-f", "mpjpeg",
+        "-boundary_tag", "frame",
+        "pipe:1"
+    ]
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL
+    )
+
+    response = web.StreamResponse(
+        status=200,
+        headers={
+            "Content-Type": "multipart/x-mixed-replace; boundary=frame",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Access-Control-Allow-Origin": "*",
+        }
+    )
+    await response.prepare(request)
+
+    try:
+        while True:
+            chunk = await proc.stdout.read(8192)
+            if not chunk:
+                break
+            await response.write(chunk)
+    except (asyncio.CancelledError, ConnectionResetError):
+        pass
+    finally:
+        try:
+            proc.terminate()
+            await asyncio.wait_for(proc.wait(), timeout=1.0)
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+    return response
+
 @web.middleware
 async def cors_middleware(request, handler):
     if request.method == "OPTIONS":
@@ -409,6 +499,7 @@ async def init_app():
     app.router.add_get("/dashboard", dashboard_handler)
     app.router.add_get("/api/status", status_handler)
     app.router.add_get("/api/qr", qr_handler)
+    app.router.add_get("/api/stream", stream_handler)
     app.router.add_get("/ws", ws_handler)
     app.router.add_get("/ws/monitor", monitor_handler)
     static_dir = os.path.join(os.path.dirname(__file__), "static")
