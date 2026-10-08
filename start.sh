@@ -50,12 +50,12 @@ if [[ -n "$SERVER_HOST" ]]; then
     printf '{"server":"%s","local_ip":"%s:%s","code":"%s"}\n' "$SERVER_HOST" "$LOCAL_IP" "$PORT" "$AIRPAD_CODE" > "$SCRIPT_DIR/config.json"
     cp "$SCRIPT_DIR/config.json" "$SCRIPT_DIR/static/config.json" 2>/dev/null || true
     cp "$SCRIPT_DIR/config.json" "$SCRIPT_DIR/android_src/assets/config.json" 2>/dev/null || true
-    qrencode -o "$SCRIPT_DIR/static/qr_connect.png" -s 8 -m 2 "$APP_URL" 2>/dev/null || true
+    qrencode -o "$SCRIPT_DIR/static/qr_connect.png" -s 8 -m 2 "$GITHUB_URL" 2>/dev/null || true
     cp "$SCRIPT_DIR/static/qr_connect.png" "$SCRIPT_DIR/qr_connect.png" 2>/dev/null || true
     echo ">> Sinkronisasi host tunnel ke GitHub..."
     (
         cd "$SCRIPT_DIR"
-        git add config.json static/config.json android_src/assets/config.json 2>/dev/null || true
+        git add config.json static/config.json android_src/assets/config.json AirPad.apk static/AirPad.apk 2>/dev/null || true
         git commit -m "chore: sync live tunnel host to $SERVER_HOST" 2>/dev/null || true
         git push origin main 2>/dev/null || true
     ) || true
@@ -63,20 +63,21 @@ fi
 
 echo ""
 echo "=========================================================="
-echo "🎮 AIRPAD - VIRTUAL GAMEPAD DENGAN KODE PAIRING!"
+echo "🎮 AIRPAD - VIRTUAL GAMEPAD PC ONLINE"
 echo "=========================================================="
 echo "🔑 KODE PAIRING STIK : [ $AIRPAD_CODE ]"
 echo "=========================================================="
-echo "📱 SCAN QR INI DARI APLIKASI AIRPAD HP (ATAU KAMERA HP):"
-echo ">> Di aplikasi AirPad: Tap tombol [SCAN QR PC]"
-echo ">> Lewat Kamera HP: Langsung buka aplikasi AirPad (Bukan Browser!)"
+echo "📱 CARA KONEKSI DARI HP (PILIH SALAH SATU):"
+echo "1. Buka aplikasi AirPad di HP -> Tap [📷 SCAN QR PC]"
+echo "   (Arahkan kamera HP ke QR di bawah ini -> LANGSUNG SAMBUNG TANPA BROWSER!)"
+echo "2. ATAU Masukkan Kode 4-Digit: [ $AIRPAD_CODE ] di dalam aplikasi!"
 echo "=========================================================="
-qrencode -t UTF8 "$APP_URL" 2>/dev/null || true
+qrencode -t UTF8 "$GITHUB_URL" 2>/dev/null || true
 echo "=========================================================="
-echo "🌐 Link Web (Jika main via Browser HP / Laptop):"
+echo "🌐 Link Web (Jika main lewat Browser HP / Laptop):"
 echo "   $GITHUB_URL"
 echo ""
-echo "🏠 Link Wi-Fi Lokal (1 Jaringan):"
+echo "🏠 Link Wi-Fi Lokal (1 Jaringan / Super Rendah Latensi):"
 echo "   $LOCAL_URL"
 echo "=========================================================="
 echo ">> Temen lu cukup buka AirPad & scan QR / ketik kode: $AIRPAD_CODE"
@@ -85,3 +86,4 @@ echo ">> Tekan Ctrl+C untuk mematikan server."
 echo "=========================================================="
 
 wait "$SERVER_PID"
+

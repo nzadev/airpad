@@ -37,6 +37,12 @@ public class MainActivity extends Activity {
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
+        settings.setAllowFileAccessFromFileURLs(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        }
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setUserAgentString(settings.getUserAgentString() + " AirPadNative/2.2");
 
@@ -51,14 +57,16 @@ public class MainActivity extends Activity {
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                        pendingPermissionRequest = request;
-                        requestPermissions(new String[]{Manifest.permission.CAMERA}, 101);
-                        return;
+                runOnUiThread(() -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                            pendingPermissionRequest = request;
+                            requestPermissions(new String[]{Manifest.permission.CAMERA}, 101);
+                            return;
+                        }
                     }
-                }
-                request.grant(request.getResources());
+                    request.grant(request.getResources());
+                });
             }
         });
 
@@ -109,12 +117,15 @@ public class MainActivity extends Activity {
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == 101 && pendingPermissionRequest != null) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                pendingPermissionRequest.grant(pendingPermissionRequest.getResources());
-            } else {
-                pendingPermissionRequest.deny();
-            }
+            final PermissionRequest req = pendingPermissionRequest;
             pendingPermissionRequest = null;
+            runOnUiThread(() -> {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    req.grant(req.getResources());
+                } else {
+                    req.deny();
+                }
+            });
         }
     }
 

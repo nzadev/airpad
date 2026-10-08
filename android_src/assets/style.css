@@ -2015,8 +2015,62 @@ button,
 .scale-btn,
 .toggle-switch,
 .chip-btn,
-.btn-scan-qr {
+.btn-scan-qr,
+.btn-open-in-app {
   touch-action: manipulation !important;
   pointer-events: auto !important;
 }
+
+/* Deep Link Banner to Open in Native App */
+.open-app-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.4) 0%, rgba(6, 182, 212, 0.25) 100%);
+  border: 1.5px solid #38bdf8;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  gap: 12px;
+  box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
+}
+.open-app-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.open-app-icon {
+  font-size: 24px;
+}
+.open-app-info strong {
+  display: block;
+  font-size: 13px;
+  color: #f8fafc;
+}
+.open-app-info span {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+}
+.btn-open-in-app {
+  background: #38bdf8;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.4);
+  transition: transform 0.15s ease;
+}
+.btn-open-in-app:active {
+  transform: scale(0.95);
+}
+
+body.is-native-app .open-app-banner,
+html.is-native-app .open-app-banner {
+  display: none !important;
+}
+
 

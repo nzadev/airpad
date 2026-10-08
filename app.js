@@ -180,6 +180,17 @@
     switchTab("download");
   }
 
+  // Mobile browser handoff: If opened via QR / link in phone browser, allow 1-tap jump to Native App
+  const openAppBanner = document.getElementById("open-app-banner");
+  const btnOpenInApp = document.getElementById("btn-open-in-app");
+  if (openAppBanner && btnOpenInApp && !isNativeApp) {
+    const codeVal = paramCode || "";
+    const serverVal = paramServer || "";
+    const intentUrl = `intent://connect?code=${encodeURIComponent(codeVal)}&server=${encodeURIComponent(serverVal)}#Intent;scheme=airpad;package=com.nzadev.airpad;end;`;
+    btnOpenInApp.href = intentUrl;
+    openAppBanner.style.display = "flex";
+  }
+
   function cleanHost(str) {
     if (!str) return "";
     return str.trim()
@@ -247,23 +258,57 @@
       return activeServerHost;
     }
 
-    // 1. Fetch live config via un-cached GitHub API
+    // 1. Direct fetch from raw.githubusercontent.com (No API limits, CORS enabled)
     if (isExternalHost) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
-        const res = await fetch("https://api.github.com/repos/nzadev/airpad/contents/config.json", {
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const resRaw = await fetch("https://raw.githubusercontent.com/nzadev/airpad/main/config.json?_t=" + Date.now(), {
           signal: controller.signal
         });
         clearTimeout(timeoutId);
+        if (resRaw.ok) {
+          const cfg = await resRaw.json();
+          if (cfg && cfg.server) {
+            window.liveTunnelHost = cleanHost(cfg.server);
+            saveServer(cfg.server);
+            if (cfg.local_ip) window.lastLocalIp = cleanHost(cfg.local_ip);
+            if (cfg.code && !inputCode.value) inputCode.value = cfg.code;
+            return activeServerHost;
+          }
+        }
+      } catch (e) {}
 
+      // 2. Fetch from GitHub Pages config.json
+      try {
+        const controller2 = new AbortController();
+        const timeoutId2 = setTimeout(() => controller2.abort(), 2500);
+        const resPages = await fetch("https://nzadev.github.io/airpad/config.json?_t=" + Date.now(), {
+          signal: controller2.signal
+        });
+        clearTimeout(timeoutId2);
+        if (resPages.ok) {
+          const cfg = await resPages.json();
+          if (cfg && cfg.server) {
+            window.liveTunnelHost = cleanHost(cfg.server);
+            saveServer(cfg.server);
+            if (cfg.local_ip) window.lastLocalIp = cleanHost(cfg.local_ip);
+            if (cfg.code && !inputCode.value) inputCode.value = cfg.code;
+            return activeServerHost;
+          }
+        }
+      } catch (e) {}
+
+      // 3. Fallback: GitHub API
+      try {
+        const res = await fetch("https://api.github.com/repos/nzadev/airpad/contents/config.json");
         if (res.ok) {
           const data = await res.json();
           if (data && data.content) {
             const cleanB64 = data.content.replace(/\s/g, "");
             const decoded = decodeURIComponent(escape(atob(cleanB64)));
             const cfg = JSON.parse(decoded);
-            if (cfg && cfg.server && !deadServers.some((d) => cfg.server.includes(d))) {
+            if (cfg && cfg.server) {
               window.liveTunnelHost = cleanHost(cfg.server);
               saveServer(cfg.server);
               if (cfg.local_ip) window.lastLocalIp = cleanHost(cfg.local_ip);
@@ -274,33 +319,12 @@
         }
       } catch (e) {}
 
-      // 2. Fallback: Query latest commit SHA to bypass Fastly cache
-      try {
-        const resCommit = await fetch("https://api.github.com/repos/nzadev/airpad/commits/main");
-        if (resCommit.ok) {
-          const commitData = await resCommit.json();
-          if (commitData && commitData.sha) {
-            const rawRes = await fetch(`https://raw.githubusercontent.com/nzadev/airpad/${commitData.sha}/config.json`);
-            if (rawRes.ok) {
-              const cfgRaw = await rawRes.json();
-              if (cfgRaw && cfgRaw.server && !deadServers.some((d) => cfgRaw.server.includes(d))) {
-                window.liveTunnelHost = cleanHost(cfgRaw.server);
-                saveServer(cfgRaw.server);
-                if (cfgRaw.local_ip) window.lastLocalIp = cleanHost(cfgRaw.local_ip);
-                if (cfgRaw.code && !inputCode.value) inputCode.value = cfgRaw.code;
-                return activeServerHost;
-              }
-            }
-          }
-        }
-      } catch (e) {}
-
-      // 3. Fallback: local asset config.json
+      // 4. Fallback: local asset config.json
       try {
         const res2 = await fetch("./config.json?_t=" + Date.now());
         if (res2.ok) {
           const cfg2 = await res2.json();
-          if (cfg2 && cfg2.server && !deadServers.some((d) => cfg2.server.includes(d))) {
+          if (cfg2 && cfg2.server) {
             window.liveTunnelHost = cleanHost(cfg2.server);
             saveServer(cfg2.server);
             if (cfg2.local_ip) window.lastLocalIp = cleanHost(cfg2.local_ip);
@@ -317,8 +341,11 @@
       return activeServerHost;
     }
 
-    // Default to the current live tunnel if nothing else resolved
-    saveServer("reservations-gauge-safari-brother.trycloudflare.com");
+    if (window.liveTunnelHost) {
+      saveServer(window.liveTunnelHost);
+      return activeServerHost;
+    }
+
     return activeServerHost;
   }
 
