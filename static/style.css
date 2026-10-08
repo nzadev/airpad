@@ -2064,17 +2064,19 @@ html.is-native-app .open-app-banner {
 
 /* Remote Game Screen Streaming Layer */
 .game-stream-container {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0 !important;
-  background: #000;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  width: 100dvw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 1 !important;
+  background: #000000 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: none !important;
 }
 
 .game-stream-container.hidden {
@@ -2085,157 +2087,275 @@ html.is-native-app .open-app-banner {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  pointer-events: none;
+  pointer-events: none !important;
   user-select: none;
+  -webkit-user-select: none;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
-/* Ensure all controls are layered firmly in front of the stream video */
+/* Ensure all gamepad controls are layered firmly in front of the stream video */
 .top-nav {
   position: relative;
-  z-index: 50 !important;
+  z-index: 60 !important;
 }
 
 .shoulders-bar {
   position: relative;
-  z-index: 40 !important;
+  z-index: 50 !important;
 }
 
 .controls-grid {
   position: relative;
-  z-index: 40 !important;
+  z-index: 50 !important;
 }
 
 .control-zone {
   position: relative;
-  z-index: 45 !important;
+  z-index: 52 !important;
 }
 
 .dpad-wrapper,
 .action-wrapper,
 .joystick-container {
   position: relative;
-  z-index: 50 !important;
+  z-index: 55 !important;
 }
 
 /* Translucent Gamepad Overlay when streaming is active */
 #gamepad-container.streaming-active {
-  background: #000 !important;
+  background: #000000 !important;
 }
 
 #gamepad-container.streaming-active .dpad-btn {
-  background: rgba(15, 23, 42, 0.72) !important;
-  border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
-  color: #f8fafc !important;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6) !important;
+  background: rgba(15, 23, 42, 0.82) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.65) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7), 0 0 10px rgba(56, 189, 248, 0.25) !important;
 }
 
 #gamepad-container.streaming-active .action-btn {
-  background: rgba(15, 23, 42, 0.75) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6) !important;
+  background: rgba(15, 23, 42, 0.84) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7) !important;
 }
 
-#gamepad-container.streaming-active .stick-base {
-  background: rgba(15, 23, 42, 0.65) !important;
-  border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+#gamepad-container.streaming-active .joystick-base {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 2px solid rgba(56, 189, 248, 0.5) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 4px 10px rgba(0,0,0,0.8), 0 0 12px rgba(56, 189, 248, 0.2) !important;
 }
 
-#gamepad-container.streaming-active .stick-knob {
+#gamepad-container.streaming-active .joystick-knob {
   background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%) !important;
   border: 2px solid #ffffff !important;
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.7) !important;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.85) !important;
+  color: #ffffff !important;
+}
+
+#gamepad-container.streaming-active .btn-thumb-click {
+  background: rgba(15, 23, 42, 0.88) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.6) !important;
+  color: #38bdf8 !important;
 }
 
 #gamepad-container.streaming-active .btn-shoulder,
 #gamepad-container.streaming-active .btn-pill,
 #gamepad-container.streaming-active .btn-ps {
-  background: rgba(15, 23, 42, 0.72) !important;
-  border: 1.5px solid rgba(56, 189, 248, 0.45) !important;
-  color: #f8fafc !important;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.82) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
 }
 
 #gamepad-container.streaming-active .top-nav {
-  background: rgba(15, 23, 42, 0.75) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 2px 12px;
 }
 
-/* Floating Stream Quick-Bar (Docked at top center) */
-.stream-floating-hud {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+/* Stream Buttons in Top-Nav */
+.stream-btn {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+  color: #38bdf8 !important;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.stream-btn:hover {
+  background: rgba(56, 189, 248, 0.3) !important;
+}
+#gamepad-container.streaming-active .stream-btn {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.5), rgba(56, 189, 248, 0.35)) !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
+}
+
+.exit-stream-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
+  border: 1.5px solid #f87171 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.6) !important;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.exit-stream-btn:active {
+  transform: scale(0.95);
+  background: #dc2626 !important;
+}
+
+/* Dedicated Stream Settings Modal */
+.stream-modal-card {
+  max-width: 660px !important;
+  max-height: 92vh !important;
+  padding: 18px 20px !important;
+}
+
+.modal-subtext {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.stream-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: calc(88vh - 80px);
+  padding-right: 4px;
+}
+
+.stream-status-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  z-index: 99999 !important;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1.5px solid rgba(56, 189, 248, 0.6);
-  border-radius: 30px;
-  padding: 4px 10px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  justify-content: space-between;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 14px;
+  border-radius: 12px;
 }
 
-.stream-floating-hud.hidden {
-  display: none !important;
+.stream-status-banner.active {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.4);
 }
 
-.hud-pill-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #f8fafc;
+.status-indicator-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #94a3b8;
+  margin-right: 8px;
+}
+
+.stream-status-banner.active .status-indicator-dot {
+  background: #22c55e;
+  box-shadow: 0 0 10px #22c55e;
+}
+
+.stream-section-title {
   font-size: 11px;
   font-weight: 800;
-  padding: 6px 12px;
-  border-radius: 18px;
+  color: #38bdf8;
+  letter-spacing: 1px;
+  margin-top: 8px;
+}
+
+.crop-grid-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.crop-grid-group.four-col {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.crop-grid-group.eight-col {
+  grid-template-columns: repeat(8, 1fr);
+}
+
+.crop-select-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  color: #f8fafc;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
-  touch-action: manipulation !important;
+  gap: 10px;
+  text-align: left;
   transition: all 0.15s ease;
+  touch-action: manipulation;
 }
 
-.hud-pill-btn:active {
-  transform: scale(0.95);
-  background: rgba(56, 189, 248, 0.35);
+.crop-select-card:hover {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
 }
 
-.hud-pill-btn.exit-btn {
-  background: rgba(239, 68, 68, 0.3);
-  border-color: rgba(239, 68, 68, 0.8);
-  color: #fca5a5;
+.crop-select-card:active {
+  transform: scale(0.97);
+}
+
+.crop-select-card.active {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.35) 0%, rgba(37, 99, 235, 0.35) 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+}
+
+.crop-select-card.active strong {
+  color: #38bdf8;
+}
+
+.crop-select-card.mini {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 13px;
   font-weight: 800;
 }
 
-.hud-pill-btn.exit-btn:active {
-  background: #ef4444;
-  color: #ffffff;
+.crop-select-card.full-row {
+  width: 100%;
+  padding: 12px 14px;
 }
 
-.settings-select-input {
-  background: #1c1f30;
-  border: 1.5px solid rgba(56, 189, 248, 0.4);
-  color: #f8fafc;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  outline: none;
-  max-width: 180px;
+.crop-card-icon {
+  font-size: 20px;
+}
+
+.crop-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.crop-card-text strong {
+  font-size: 13px;
+}
+
+.crop-card-text span {
+  font-size: 10px;
+  color: #94a3b8;
 }
 
 

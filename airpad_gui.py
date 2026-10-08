@@ -132,7 +132,7 @@ class ServerPollWorker(QThread):
 class AirPadMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("AirPad Control Center")
+        self.setWindowTitle("AirPad - Laptop Control Center")
         self.resize(780, 580)
         self.setMinimumSize(700, 520)
 
@@ -215,9 +215,9 @@ class AirPadMainWindow(QMainWindow):
             logo_label.setPixmap(pix)
 
         brand_vbox = QVBoxLayout()
-        brand_title = QLabel("AirPad Control Center")
+        brand_title = QLabel("AirPad Laptop Control Center")
         brand_title.setStyleSheet("font-size: 20px; font-weight: 900; color: #f8fafc;")
-        brand_sub = QLabel("Virtual Mobile Gamepad Server with Instant QR Pairing")
+        brand_sub = QLabel("Virtual Gamepad Server untuk Laptop / PC (Stardew Valley & PC Games)")
         brand_sub.setStyleSheet("font-size: 11px; color: #64748b;")
         brand_vbox.addWidget(brand_title)
         brand_vbox.addWidget(brand_sub)
@@ -320,7 +320,7 @@ class AirPadMainWindow(QMainWindow):
         row_local.addWidget(btn_copy_local)
 
         row_apk = QHBoxLayout()
-        self.lbl_apk = QLabel("📥 APK HP: AirPad.apk (77 KB)")
+        self.lbl_apk = QLabel("📥 APK HP: AirPad.apk (85 KB)")
         self.lbl_apk.setStyleSheet("font-size: 11px; color: #94a3b8;")
         btn_copy_apk = QPushButton("Salin")
         btn_copy_apk.setProperty("class", "btn-secondary")
@@ -328,19 +328,9 @@ class AirPadMainWindow(QMainWindow):
         row_apk.addWidget(self.lbl_apk, 1)
         row_apk.addWidget(btn_copy_apk)
 
-        row_tv = QHBoxLayout()
-        self.lbl_tv = QLabel("📺 APK TV: AirPad-TV.apk (33 KB)")
-        self.lbl_tv.setStyleSheet("font-size: 11px; color: #94a3b8;")
-        btn_copy_tv = QPushButton("Salin")
-        btn_copy_tv.setProperty("class", "btn-secondary")
-        btn_copy_tv.clicked.connect(self.copy_tv_apk)
-        row_tv.addWidget(self.lbl_tv, 1)
-        row_tv.addWidget(btn_copy_tv)
-
         urls_layout.addLayout(row_tunnel)
         urls_layout.addLayout(row_local)
         urls_layout.addLayout(row_apk)
-        urls_layout.addLayout(row_tv)
         card_left_layout.addLayout(urls_layout)
 
         grid_layout.addWidget(card_left, 1)

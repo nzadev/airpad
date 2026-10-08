@@ -10,7 +10,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>AirPad - Virtual Gamepad</title>
-  <link rel="stylesheet" href="style.css?v=2.7">
+  <link rel="stylesheet" href="style.css?v=3.6.0">
   <link rel="manifest" href="manifest.json">
   <script>
     document.documentElement.classList.add("is-native-app");
@@ -107,16 +107,6 @@
       <img id="game-stream-img" class="game-stream-img" alt="Game Stream" />
     </div>
 
-    <!-- Floating Stream Quick-Bar (Docked at top center, active when streaming) -->
-    <div id="stream-floating-hud" class="stream-floating-hud hidden">
-      <button id="btn-hud-crop" class="hud-pill-btn" type="button" title="Ganti Posisi Layar Player">
-        <span id="hud-crop-label">📱 P2 Kanan</span>
-      </button>
-      <button id="btn-hud-exit-stream" class="hud-pill-btn exit-btn" type="button" title="Tutup Layar Game">
-        <span>✖ Tutup Layar</span>
-      </button>
-    </div>
-
     <!-- Top Bar Status -->
     <header class="top-nav">
       <div class="status-badge" id="player-badge">
@@ -127,6 +117,14 @@
         <span id="ping-text">0 ms</span>
       </div>
       <div class="top-actions">
+        <button id="btn-stream-menu" class="icon-btn-pill stream-btn" title="Streaming Layar Game PC" type="button">
+          <span>📺</span>
+          <span id="stream-btn-text">Layar</span>
+        </button>
+        <button id="btn-stream-exit-quick" class="icon-btn-pill exit-stream-btn hidden" title="Matikan Layar Game" type="button">
+          <span>✖</span>
+          <span class="btn-text-sm">Tutup Layar</span>
+        </button>
         <button id="btn-open-settings" class="icon-btn-pill" title="Pengaturan & Kustomisasi Tombol" type="button">
           <span>⚙️</span>
           <span class="btn-text-sm">Menu</span>
@@ -229,35 +227,7 @@
           </label>
         </div>
 
-        <!-- Setting Item: Remote Screen Stream -->
-        <div class="setting-item">
-          <div class="setting-info">
-            <strong>📺 Layar Game PC (Stardew Stream)</strong>
-            <span>Tampilkan visual game di layar HP</span>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="toggle-screen-stream">
-            <span class="slider"></span>
-          </label>
-        </div>
 
-        <div class="setting-item" id="item-crop-select" style="display: none;">
-          <div class="setting-info">
-            <strong>✂️ Fokus Layar / Split Player</strong>
-            <span>Pilih bagian layar karakter</span>
-          </div>
-          <select id="select-crop-mode" class="settings-select-input">
-            <option value="p2_v">📱 Player 2 (Kanan - 2 Player)</option>
-            <option value="p1_v">📱 Player 1 (Kiri - 2 Player)</option>
-            <option value="p2_h">📱 Player 2 (Bawah - 2 Player)</option>
-            <option value="p1_h">📱 Player 1 (Atas - 2 Player)</option>
-            <option value="p1_q">👥 Player 1 (Kiri Atas - 4 Player)</option>
-            <option value="p2_q">👥 Player 2 (Kanan Atas - 4 Player)</option>
-            <option value="p3_q">👥 Player 3 (Kiri Bawah - 4 Player)</option>
-            <option value="p4_q">👥 Player 4 (Kanan Bawah - 4 Player)</option>
-            <option value="full">🖥️ Full Layar (1-8 Player)</option>
-          </select>
-        </div>
 
         <!-- Setting Item 2: Button Size Scale -->
         <div class="setting-item">
@@ -297,6 +267,112 @@
     </div>
   </div>
 
+  <!-- Dedicated Remote Screen Stream Modal (1-8 Players & Split Controls) -->
+  <div id="stream-settings-modal" class="modal-overlay hidden">
+    <div class="modal-card stream-modal-card">
+      <div class="settings-header">
+        <div class="settings-title-row">
+          <span style="font-size: 22px;">📺</span>
+          <div>
+            <h3>Layar Game PC (Stardew Stream)</h3>
+            <p class="modal-subtext">Pilih layar karakter lu (Mendukung 1 - 8 Player)</p>
+          </div>
+        </div>
+        <button id="btn-close-stream-modal" class="modal-close-btn" type="button" aria-label="Tutup">✕</button>
+      </div>
+
+      <div class="stream-modal-body">
+        <!-- Quick Status & Exit Banner -->
+        <div class="stream-status-banner" id="stream-status-banner">
+          <div class="stream-status-info">
+            <span class="status-indicator-dot" id="stream-indicator-dot"></span>
+            <span id="stream-status-text">Status Layar: Mati</span>
+          </div>
+          <button id="btn-modal-stop-stream" class="btn-danger-sm hidden" type="button">
+            ✖ Matikan Layar
+          </button>
+        </div>
+
+        <!-- Section 1: Mode Layar Standar (2 Player Stardew) -->
+        <div class="stream-section-title">🎮 STARDEW VALLEY SPLIT (2 PLAYER)</div>
+        <div class="crop-grid-group">
+          <button type="button" class="crop-select-card" data-crop="p2_v">
+            <span class="crop-card-icon">📱</span>
+            <div class="crop-card-text">
+              <strong>Player 2 (Kanan)</strong>
+              <span>Split Vertikal Standar</span>
+            </div>
+          </button>
+          <button type="button" class="crop-select-card" data-crop="p1_v">
+            <span class="crop-card-icon">📱</span>
+            <div class="crop-card-text">
+              <strong>Player 1 (Kiri)</strong>
+              <span>Split Vertikal Standar</span>
+            </div>
+          </button>
+          <button type="button" class="crop-select-card" data-crop="p2_h">
+            <span class="crop-card-icon">📱</span>
+            <div class="crop-card-text">
+              <strong>Player 2 (Bawah)</strong>
+              <span>Split Horizontal</span>
+            </div>
+          </button>
+          <button type="button" class="crop-select-card" data-crop="p1_h">
+            <span class="crop-card-icon">📱</span>
+            <div class="crop-card-text">
+              <strong>Player 1 (Atas)</strong>
+              <span>Split Horizontal</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Section 2: Mode 4 Player (Quadrant) -->
+        <div class="stream-section-title">👥 SPLIT 4 PLAYER (QUADRANT 2x2)</div>
+        <div class="crop-grid-group four-col">
+          <button type="button" class="crop-select-card" data-crop="p1_q">
+            <strong>P1</strong>
+            <span>Kiri Atas</span>
+          </button>
+          <button type="button" class="crop-select-card" data-crop="p2_q">
+            <strong>P2</strong>
+            <span>Kanan Atas</span>
+          </button>
+          <button type="button" class="crop-select-card" data-crop="p3_q">
+            <strong>P3</strong>
+            <span>Kiri Bawah</span>
+          </button>
+          <button type="button" class="crop-select-card" data-crop="p4_q">
+            <strong>P4</strong>
+            <span>Kanan Bawah</span>
+          </button>
+        </div>
+
+        <!-- Section 3: Mode 8 Player (Multi-Player Stardew 1.6 Grid) -->
+        <div class="stream-section-title">🔥 MULTI-PLAYER GRID (1 SAMPAI 8 PLAYER)</div>
+        <div class="crop-grid-group eight-col">
+          <button type="button" class="crop-select-card mini" data-crop="p1_8"><strong>P1</strong></button>
+          <button type="button" class="crop-select-card mini" data-crop="p2_8"><strong>P2</strong></button>
+          <button type="button" class="crop-select-card mini" data-crop="p3_8"><strong>P3</strong></button>
+          <button type="button" class="crop-select-card mini" data-crop="p4_8"><strong>P4</strong></button>
+          <button type="button" class="crop-select-card mini" data-crop="p5_8"><strong>P5</strong></button>
+          <button type="button" class="crop-select-card mini" data-crop="p6_8"><strong>P6</strong></button>
+          <button type="button" class="crop-select-card mini" data-crop="p7_8"><strong>P7</strong></button>
+          <button type="button" class="crop-select-card mini" data-crop="p8_8"><strong>P8</strong></button>
+        </div>
+
+        <!-- Section 4: Full Screen -->
+        <div class="stream-section-title">🖥️ MONITOR UTUH</div>
+        <button type="button" class="crop-select-card full-row" data-crop="full">
+          <span class="crop-card-icon">🖥️</span>
+          <div class="crop-card-text">
+            <strong>Full Layar PC (100% Layar Laptop Tanpa Crop)</strong>
+            <span>Cocok untuk 1 Player / Layar Utama</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Layout Mode Top Bar -->
   <div id="edit-layout-hud" class="edit-layout-hud hidden">
     <div class="edit-hud-title">
@@ -319,6 +395,6 @@
   </div>
 
   <script src="jsqr.min.js"></script>
-  <script src="app.js?v=2.7"></script>
+  <script src="app.js?v=3.6.0"></script>
 </body>
 </html>

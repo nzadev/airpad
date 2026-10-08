@@ -283,6 +283,12 @@ async def dashboard_handler(request):
         return web.FileResponse(dash_file)
     return web.Response(text="Dashboard file not found", status=404)
 
+async def tv_dashboard_handler(request):
+    dash_file = os.path.join(os.path.dirname(__file__), "static", "tv_dashboard.html")
+    if os.path.exists(dash_file):
+        return web.FileResponse(dash_file)
+    return web.Response(text="TV Dashboard file not found", status=404)
+
 async def status_handler(request):
     tunnel, local_ip = get_server_metadata()
     pc_code, tv_code = get_pair_codes()
@@ -391,33 +397,35 @@ async def stream_handler(request):
     w, h = get_screen_resolution()
     half_w = w // 2
     half_h = h // 2
-    if crop == "p2_v":
-        v_size = f"{half_w}x{h}"
-        inp = f":0.0+{half_w},0"
-    elif crop == "p1_v":
-        v_size = f"{half_w}x{h}"
-        inp = ":0.0+0,0"
-    elif crop == "p2_h":
-        v_size = f"{w}x{half_h}"
-        inp = f":0.0+0,{half_h}"
-    elif crop == "p1_h":
-        v_size = f"{w}x{half_h}"
-        inp = ":0.0+0,0"
-    elif crop == "p1_q":
-        v_size = f"{half_w}x{half_h}"
-        inp = ":0.0+0,0"
-    elif crop == "p2_q":
-        v_size = f"{half_w}x{half_h}"
-        inp = f":0.0+{half_w},0"
-    elif crop == "p3_q":
-        v_size = f"{half_w}x{half_h}"
-        inp = f":0.0+0,{half_h}"
-    elif crop == "p4_q":
-        v_size = f"{half_w}x{half_h}"
-        inp = f":0.0+{half_w},{half_h}"
-    else:
-        v_size = f"{w}x{h}"
-        inp = ":0.0+0,0"
+    w_4 = w // 4
+    h_2 = h // 2
+
+    crop_map = {
+        "full": (f"{w}x{h}", ":0.0+0,0"),
+        "p1_v": (f"{half_w}x{h}", ":0.0+0,0"),
+        "p2_v": (f"{half_w}x{h}", f":0.0+{half_w},0"),
+        "p1_h": (f"{w}x{half_h}", ":0.0+0,0"),
+        "p2_h": (f"{w}x{half_h}", f":0.0+0,{half_h}"),
+        "p1_q": (f"{half_w}x{half_h}", ":0.0+0,0"),
+        "p2_q": (f"{half_w}x{half_h}", f":0.0+{half_w},0"),
+        "p3_q": (f"{half_w}x{half_h}", f":0.0+0,{half_h}"),
+        "p4_q": (f"{half_w}x{half_h}", f":0.0+{half_w},{half_h}"),
+        "p1_8": (f"{w_4}x{h_2}", ":0.0+0,0"),
+        "p2_8": (f"{w_4}x{h_2}", f":0.0+{w_4},0"),
+        "p3_8": (f"{w_4}x{h_2}", f":0.0+{2*w_4},0"),
+        "p4_8": (f"{w_4}x{h_2}", f":0.0+{3*w_4},0"),
+        "p5_8": (f"{w_4}x{h_2}", f":0.0+0,{h_2}"),
+        "p6_8": (f"{w_4}x{h_2}", f":0.0+{w_4},{h_2}"),
+        "p7_8": (f"{w_4}x{h_2}", f":0.0+{2*w_4},{h_2}"),
+        "p8_8": (f"{w_4}x{h_2}", f":0.0+{3*w_4},{h_2}"),
+    }
+
+    aliases = {
+        "p1": "p1_v", "p2": "p2_v", "p3": "p3_q", "p4": "p4_q",
+        "p5": "p5_8", "p6": "p6_8", "p7": "p7_8", "p8": "p8_8"
+    }
+    target_crop = aliases.get(crop, crop)
+    v_size, inp = crop_map.get(target_crop, (f"{w}x{h}", ":0.0+0,0"))
 
     cmd = [
         "ffmpeg", "-nostdin",
@@ -425,7 +433,7 @@ async def stream_handler(request):
         "-framerate", str(fps_val),
         "-video_size", v_size,
         "-i", inp,
-        "-vf", "scale=960:-1",
+        "-vf", "scale=960:-2",
         "-c:v", "mjpeg",
         "-q:v", "6",
         "-flush_packets", "1",
@@ -511,6 +519,7 @@ async def init_app():
     app.router.add_get("/AirPad-TV.apk", download_tv_apk_handler)
     app.router.add_get("/airpad-tv.apk", download_tv_apk_handler)
     app.router.add_get("/dashboard", dashboard_handler)
+    app.router.add_get("/tv-dashboard", tv_dashboard_handler)
     app.router.add_get("/api/status", status_handler)
     app.router.add_get("/api/qr", qr_handler)
     app.router.add_get("/api/stream", stream_handler)

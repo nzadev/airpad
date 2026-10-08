@@ -9,13 +9,15 @@
   const pingText = document.getElementById("ping-text");
   const btnOpenSettings = document.getElementById("btn-open-settings");
   const btnDisconnect = document.getElementById("btn-disconnect");
-  const streamFloatingHud = document.getElementById("stream-floating-hud");
-  const btnHudCrop = document.getElementById("btn-hud-crop");
-  const hudCropLabel = document.getElementById("hud-crop-label");
-  const btnHudExitStream = document.getElementById("btn-hud-exit-stream");
-  const toggleScreenStream = document.getElementById("toggle-screen-stream");
-  const itemCropSelect = document.getElementById("item-crop-select");
-  const selectCropMode = document.getElementById("select-crop-mode");
+  const btnStreamMenu = document.getElementById("btn-stream-menu");
+  const streamBtnText = document.getElementById("stream-btn-text");
+  const btnStreamExitQuick = document.getElementById("btn-stream-exit-quick");
+  const streamSettingsModal = document.getElementById("stream-settings-modal");
+  const btnCloseStreamModal = document.getElementById("btn-close-stream-modal");
+  const btnModalStopStream = document.getElementById("btn-modal-stop-stream");
+  const streamStatusBanner = document.getElementById("stream-status-banner");
+  const streamStatusText = document.getElementById("stream-status-text");
+  const cropSelectCards = document.querySelectorAll(".crop-select-card");
   const gameStreamContainer = document.getElementById("game-stream-container");
   const gameStreamImg = document.getElementById("game-stream-img");
   const gamepadContainer = document.getElementById("gamepad-container");
@@ -624,20 +626,27 @@
     });
   }
 
-  // --- REMOTE SCREEN STREAMER & SPLIT-SCREEN CROP ENGINE ---
+  // --- REMOTE SCREEN STREAMER & 1-8 PLAYER SPLIT-SCREEN ENGINE ---
   let isStreamActive = false;
   const CROP_MODES_MAP = {
-    "p2_v": "📱 P2 (Kanan)",
-    "p1_v": "📱 P1 (Kiri)",
-    "p2_h": "📱 P2 (Bawah)",
-    "p1_h": "📱 P1 (Atas)",
-    "p1_q": "👥 P1 (Kiri Atas)",
-    "p2_q": "👥 P2 (Kanan Atas)",
-    "p3_q": "👥 P3 (Kiri Bawah)",
-    "p4_q": "👥 P4 (Kanan Bawah)",
-    "full": "🖥️ Full Layar"
+    "p2_v": "P2 Kanan",
+    "p1_v": "P1 Kiri",
+    "p2_h": "P2 Bawah",
+    "p1_h": "P1 Atas",
+    "p1_q": "P1 Kiri-Atas (4P)",
+    "p2_q": "P2 Kanan-Atas (4P)",
+    "p3_q": "P3 Kiri-Bawah (4P)",
+    "p4_q": "P4 Kanan-Bawah (4P)",
+    "p1_8": "P1 (8P)",
+    "p2_8": "P2 (8P)",
+    "p3_8": "P3 (8P)",
+    "p4_8": "P4 (8P)",
+    "p5_8": "P5 (8P)",
+    "p6_8": "P6 (8P)",
+    "p7_8": "P7 (8P)",
+    "p8_8": "P8 (8P)",
+    "full": "Full Layar"
   };
-  const CROP_KEYS = Object.keys(CROP_MODES_MAP);
   let currentCropKey = "p2_v";
 
   function getStreamUrl(cropKey) {
@@ -656,76 +665,87 @@
     return `${base}/api/stream?crop=${cropId}&_t=${Date.now()}`;
   }
 
-  function startGameStream() {
+  function updateStreamModalUI() {
+    if (streamStatusBanner) {
+      if (isStreamActive) {
+        streamStatusBanner.classList.add("active");
+        if (streamStatusText) streamStatusText.textContent = `Status: Layar Aktif (${CROP_MODES_MAP[currentCropKey] || currentCropKey})`;
+        if (btnModalStopStream) btnModalStopStream.classList.remove("hidden");
+      } else {
+        streamStatusBanner.classList.remove("active");
+        if (streamStatusText) streamStatusText.textContent = "Status: Layar Mati";
+        if (btnModalStopStream) btnModalStopStream.classList.add("hidden");
+      }
+    }
+
+    cropSelectCards.forEach((card) => {
+      if (card.dataset.crop === currentCropKey) {
+        card.classList.add("active");
+      } else {
+        card.classList.remove("active");
+      }
+    });
+  }
+
+  function openStreamModal() {
+    updateStreamModalUI();
+    if (streamSettingsModal) streamSettingsModal.classList.remove("hidden");
+    haptic(30);
+  }
+
+  function closeStreamModal() {
+    if (streamSettingsModal) streamSettingsModal.classList.add("hidden");
+  }
+
+  function startGameStream(targetCrop) {
+    if (targetCrop) currentCropKey = targetCrop;
     isStreamActive = true;
     if (gameStreamContainer) gameStreamContainer.classList.remove("hidden");
-    if (streamFloatingHud) streamFloatingHud.classList.remove("hidden");
     if (gamepadContainer) gamepadContainer.classList.add("streaming-active");
-    if (toggleScreenStream) toggleScreenStream.checked = true;
-    if (itemCropSelect) itemCropSelect.style.display = "flex";
-    if (selectCropMode) selectCropMode.value = currentCropKey;
-    if (hudCropLabel) hudCropLabel.textContent = CROP_MODES_MAP[currentCropKey];
+    if (btnStreamExitQuick) btnStreamExitQuick.classList.remove("hidden");
+    if (streamBtnText) {
+      const shortName = CROP_MODES_MAP[currentCropKey] || "Layar";
+      streamBtnText.textContent = `${shortName} ▾`;
+    }
     if (gameStreamImg) {
       gameStreamImg.src = getStreamUrl(currentCropKey);
     }
+    updateStreamModalUI();
     haptic(35);
   }
 
   function stopGameStream() {
     isStreamActive = false;
     if (gameStreamContainer) gameStreamContainer.classList.add("hidden");
-    if (streamFloatingHud) streamFloatingHud.classList.add("hidden");
     if (gamepadContainer) gamepadContainer.classList.remove("streaming-active");
-    if (toggleScreenStream) toggleScreenStream.checked = false;
-    if (itemCropSelect) itemCropSelect.style.display = "none";
+    if (btnStreamExitQuick) btnStreamExitQuick.classList.add("hidden");
+    if (streamBtnText) streamBtnText.textContent = "Layar";
     if (gameStreamImg) {
       gameStreamImg.src = "";
     }
-    haptic(20);
+    updateStreamModalUI();
+    haptic([20, 20]);
   }
 
-  function toggleGameStream() {
-    if (isStreamActive) {
+  if (btnStreamMenu) addTapListener(btnStreamMenu, openStreamModal);
+  if (btnStreamExitQuick) addTapListener(btnStreamExitQuick, stopGameStream);
+  if (btnCloseStreamModal) addTapListener(btnCloseStreamModal, closeStreamModal);
+  if (btnModalStopStream) {
+    addTapListener(btnModalStopStream, () => {
       stopGameStream();
-    } else {
-      startGameStream();
-    }
-  }
-
-  function cycleCropMode() {
-    const nextIdx = (CROP_KEYS.indexOf(currentCropKey) + 1) % CROP_KEYS.length;
-    currentCropKey = CROP_KEYS[nextIdx];
-    if (hudCropLabel) hudCropLabel.textContent = CROP_MODES_MAP[currentCropKey];
-    if (selectCropMode) selectCropMode.value = currentCropKey;
-    if (isStreamActive && gameStreamImg) {
-      gameStreamImg.src = getStreamUrl(currentCropKey);
-    }
-    haptic(25);
-  }
-
-  if (btnHudCrop) addTapListener(btnHudCrop, cycleCropMode);
-  if (btnHudExitStream) addTapListener(btnHudExitStream, stopGameStream);
-
-  if (toggleScreenStream) {
-    toggleScreenStream.addEventListener("change", () => {
-      if (toggleScreenStream.checked) {
-        startGameStream();
-      } else {
-        stopGameStream();
-      }
+      closeStreamModal();
     });
   }
 
-  if (selectCropMode) {
-    selectCropMode.addEventListener("change", () => {
-      currentCropKey = selectCropMode.value;
-      if (hudCropLabel) hudCropLabel.textContent = CROP_MODES_MAP[currentCropKey];
-      if (isStreamActive && gameStreamImg) {
-        gameStreamImg.src = getStreamUrl(currentCropKey);
+  cropSelectCards.forEach((card) => {
+    addTapListener(card, () => {
+      const chosen = card.dataset.crop;
+      if (chosen) {
+        startGameStream(chosen);
+        closeStreamModal();
       }
-      haptic(20);
     });
-  }
+  });
 
   if (toggleVibrate) {
     toggleVibrate.addEventListener("change", () => {
@@ -1223,6 +1243,12 @@
         if (data.type === "init") {
           playerNum = data.player;
           playerText.textContent = `PLAYER ${playerNum}`;
+          if (playerNum === 2) currentCropKey = "p2_v";
+          else if (playerNum === 1) currentCropKey = "p1_v";
+          else if (playerNum === 3) currentCropKey = "p3_q";
+          else if (playerNum === 4) currentCropKey = "p4_q";
+          else if (playerNum >= 5 && playerNum <= 8) currentCropKey = `p${playerNum}_8`;
+          updateStreamModalUI();
           playerBadge.classList.add("connected");
           hideAuthModal();
           enterFullscreen();
