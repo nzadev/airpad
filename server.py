@@ -64,17 +64,19 @@ def get_config_data():
             pass
     return {}
 
-def get_pair_code():
-    env_code = os.environ.get("AIRPAD_CODE")
-    if env_code and env_code.strip():
-        return env_code.strip()
+def get_pair_codes():
     cfg = get_config_data()
-    cfg_code = cfg.get("code")
-    if cfg_code and str(cfg_code).strip():
-        return str(cfg_code).strip()
-    return "6815"
+    env_pc = os.environ.get("AIRPAD_CODE")
+    pc_code = env_pc.strip() if env_pc else str(cfg.get("code", "6815")).strip()
+    env_tv = os.environ.get("AIRPAD_TV_CODE")
+    tv_code = env_tv.strip() if env_tv else str(cfg.get("tv_code", "7720")).strip()
+    return pc_code, tv_code
 
-PAIR_CODE = get_pair_code()
+def get_pair_code():
+    pc_code, _ = get_pair_codes()
+    return pc_code
+
+PAIR_CODE, TV_PAIR_CODE = get_pair_codes()
 
 def get_server_metadata():
     cfg = get_config_data()
@@ -94,14 +96,14 @@ class PlayerManager:
         self.players = {}
         self.lock = asyncio.Lock()
 
-    async def allocate(self, ws):
+    async def allocate(self, ws, device_type="PC"):
         async with self.lock:
             for slot in range(1, 9):
                 if slot not in self.players:
                     try:
                         ui = UInput(
                             GAMEPAD_CAP,
-                            name=f"AirPad Virtual Gamepad P{slot}",
+                            name=f"AirPad Virtual Gamepad P{slot} ({device_type})",
                             vendor=0x045e,
                             product=0x028e,
                             version=0x0114,
@@ -110,9 +112,10 @@ class PlayerManager:
                         self.players[slot] = {
                             "ws": ws,
                             "ui": ui,
+                            "device": device_type,
                             "dpad": {"UP": 0, "DOWN": 0, "LEFT": 0, "RIGHT": 0}
                         }
-                        logger.info(f"Player {slot} connected -> {ui.device.path}")
+                        logger.info(f"Player {slot} connected via [{device_type}] -> {ui.device.path}")
                         return slot, ui
                     except Exception as err:
                         logger.error(f"Failed to create UInput for Player {slot}: {err}")
@@ -156,21 +159,27 @@ async def ws_handler(request):
             return ws
 
         input_code = str(auth_data.get("code", "")).strip()
-        expected_code = get_pair_code()
-        if auth_data.get("type") != "auth" or (input_code != expected_code and input_code != str(PAIR_CODE).strip()):
+        pc_code, tv_code = get_pair_codes()
+        device_type = None
+        if input_code == pc_code:
+            device_type = "PC"
+        elif input_code == tv_code:
+            device_type = "TV"
+
+        if auth_data.get("type") != "auth" or device_type is None:
             await ws.send_str(json.dumps({"type": "error", "message": "Kode pairing salah!"}))
             await ws.close()
             return ws
 
         # Step 2: Allocate player gamepad
-        slot, ui = await player_manager.allocate(ws)
+        slot, ui = await player_manager.allocate(ws, device_type=device_type)
         if slot is None:
             await ws.send_str(json.dumps({"type": "error", "message": "Server penuh (Max 8 player)"}))
             await ws.close()
             return ws
 
-        await ws.send_str(json.dumps({"type": "init", "player": slot, "total": len(player_manager.players)}))
-        await broadcast_monitor({"type": "player_join", "player": slot, "total": len(player_manager.players)})
+        await ws.send_str(json.dumps({"type": "init", "player": slot, "device": device_type, "total": len(player_manager.players)}))
+        await broadcast_monitor({"type": "player_join", "player": slot, "device": device_type, "total": len(player_manager.players)})
 
         async for msg in ws:
             if msg.type == web.WSMsgType.TEXT:
@@ -275,10 +284,13 @@ async def dashboard_handler(request):
 
 async def status_handler(request):
     tunnel, local_ip = get_server_metadata()
+    pc_code, tv_code = get_pair_codes()
     return web.json_response({
         "status": "online",
-        "code": get_pair_code(),
+        "code": pc_code,
+        "tv_code": tv_code,
         "players": list(player_manager.players.keys()),
+        "devices": {p: d.get("device", "PC") for p, d in player_manager.players.items()},
         "tunnel": tunnel,
         "local_ip": local_ip
     })
@@ -288,10 +300,13 @@ async def monitor_handler(request):
     await ws.prepare(request)
     monitors.add(ws)
     tunnel, local_ip = get_server_metadata()
+    pc_code, tv_code = get_pair_codes()
     await ws.send_str(json.dumps({
         "type": "state",
-        "code": get_pair_code(),
+        "code": pc_code,
+        "tv_code": tv_code,
         "players": list(player_manager.players.keys()),
+        "devices": {p: d.get("device", "PC") for p, d in player_manager.players.items()},
         "tunnel": tunnel,
         "local_ip": local_ip
     }))
@@ -326,10 +341,14 @@ async def download_tv_apk_handler(request):
 
 async def qr_handler(request):
     mode = request.query.get("mode", "cloud")
+    target_dev = request.query.get("device", "").lower()
+    pc_code, tv_code = get_pair_codes()
+    code = tv_code if target_dev == "tv" else pc_code
     tunnel, local_ip = get_server_metadata()
-    code = get_pair_code()
     if mode == "apk":
         target = "https://nzadev.github.io/airpad/AirPad.apk"
+    elif mode == "tv_apk":
+        target = "https://nzadev.github.io/airpad/AirPad-TV.apk"
     elif mode == "local":
         target = f"airpad://connect?code={code}&server={local_ip}"
     elif mode == "web":

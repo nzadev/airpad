@@ -284,12 +284,19 @@ class AirPadMainWindow(QMainWindow):
 
         # Code display box
         code_box = QVBoxLayout()
-        lbl_code_title = QLabel("KODE PAIRING (4 DIGIT):")
+        code_header = QHBoxLayout()
+        lbl_code_title = QLabel("KODE PC (LAPTOP):")
         lbl_code_title.setStyleSheet("font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 1px;")
+        self.lbl_tv_code = QLabel("📺 KODE TV: 7720")
+        self.lbl_tv_code.setStyleSheet("font-size: 11px; font-weight: 800; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 2px 8px; border-radius: 6px;")
+        code_header.addWidget(lbl_code_title)
+        code_header.addStretch()
+        code_header.addWidget(self.lbl_tv_code)
+
         self.lbl_code_val = QLabel("----")
         self.lbl_code_val.setProperty("class", "code-display")
         self.lbl_code_val.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        code_box.addWidget(lbl_code_title)
+        code_box.addLayout(code_header)
         code_box.addWidget(self.lbl_code_val)
         card_left_layout.addLayout(code_box)
 
@@ -409,7 +416,8 @@ class AirPadMainWindow(QMainWindow):
             mtype = ev.get("type")
             if mtype == "player_join":
                 p = ev.get("player")
-                self.log_box.append(f"🎮 Player {p} terhubung!")
+                dev = ev.get("device", "PC")
+                self.log_box.append(f"🎮 Player {p} [{dev}] terhubung!")
                 self.set_player_state(p, True)
             elif mtype == "player_leave":
                 p = ev.get("player")
@@ -487,6 +495,8 @@ class AirPadMainWindow(QMainWindow):
         self.btn_restart.setText("🔄 Restart Server")
 
         code = str(data.get("code", "----"))
+        tv_code = str(data.get("tv_code", "7720"))
+        self.lbl_tv_code.setText(f"📺 KODE TV: {tv_code}")
         changed = False
         if code != self.current_code:
             self.current_code = code

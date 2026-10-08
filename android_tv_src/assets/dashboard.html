@@ -342,8 +342,8 @@
     <div class="brand-group">
       <img src="app_icon.png" alt="AirPad" class="brand-logo">
       <div class="brand-text">
-        <h1>AirPad Control Center</h1>
-        <p>Virtual Mobile Gamepad Server</p>
+        <h1>AirPad TV Edition</h1>
+        <p>Virtual Gamepad Screen for Coocaa Android TV</p>
       </div>
     </div>
     <div class="server-status-pill" id="server-status-pill">
@@ -355,22 +355,22 @@
   <div class="dashboard-grid">
     <!-- Left Column: QR Code & Pairing -->
     <div class="card">
-      <div class="card-title">📷 SCAN UNTUK KONEK LANGSUNG</div>
+      <div class="card-title">📺 SCAN QR KHUSUS TV COOCAA</div>
       <div class="qr-tabs">
         <button id="tab-cloud" class="qr-tab-btn active" onclick="setQrMode('cloud')">🌐 Cloudflare</button>
         <button id="tab-local" class="qr-tab-btn" onclick="setQrMode('local')">🏠 Wi-Fi Lokal</button>
         <button id="tab-apk" class="qr-tab-btn" onclick="setQrMode('apk')">📥 Unduh APK</button>
       </div>
       <div class="qr-container">
-        <img id="qr-img" src="qr_connect.png" alt="QR Code">
+        <img id="qr-img" src="qr_tv_connect.png" alt="QR Code TV">
       </div>
       <p id="qr-hint-text" style="font-size: 12px; color: #94a3b8; text-align: center;">
-        Buka aplikasi <strong>AirPad</strong> di HP lalu tap <strong>[SCAN QR PC]</strong>
+        Buka aplikasi <strong>AirPad</strong> di HP lalu scan QR atau masukkan kode TV: <strong>7720</strong>
       </p>
 
       <div class="code-hero">
-        <div class="code-hero-label">KODE PAIRING STIK</div>
-        <div id="code-val" class="code-hero-val">6815</div>
+        <div class="code-hero-label">KODE PAIRING TV (KHUSUS TV)</div>
+        <div id="code-val" class="code-hero-val" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.5);">7720</div>
       </div>
 
       <div class="url-row">
@@ -443,15 +443,15 @@
       if (mode === 'apk') {
         hintEl.innerHTML = 'Arahkan kamera HP ke QR untuk <strong>langsung unduh APK</strong>';
       } else {
-        hintEl.innerHTML = 'Buka aplikasi <strong>AirPad</strong> di HP lalu tap <strong>[SCAN QR PC]</strong>';
+        hintEl.innerHTML = 'Buka aplikasi <strong>AirPad</strong> di HP lalu scan QR atau masukkan kode TV: <strong>7720</strong>';
       }
 
       const qrImg = document.getElementById('qr-img');
       const base = `${targetHttpProto}//${targetHost}`;
       qrImg.onerror = () => {
-        if (mode === 'cloud') qrImg.src = 'qr_connect.png';
+        if (mode === 'cloud') qrImg.src = 'qr_tv_connect.png';
       };
-      qrImg.src = `${base}/api/qr?mode=${currentQrMode}&_t=${Date.now()}`;
+      qrImg.src = `${base}/api/qr?mode=${currentQrMode}&device=tv&_t=${Date.now()}`;
     }
 
     function copyText(elemId) {
@@ -509,9 +509,10 @@
         if (res.ok) {
           const data = await res.json();
           if (statusPill) statusPill.classList.remove("offline");
-          if (statusText) statusText.textContent = "ONLINE (" + (data.code || "READY") + ")";
+          const tvCode = data.tv_code || "7720";
+          if (statusText) statusText.textContent = "ONLINE (TV: " + tvCode + ")";
 
-          document.getElementById("code-val").textContent = data.code || "----";
+          document.getElementById("code-val").textContent = tvCode;
           document.getElementById("tunnel-url").textContent = "🌐 Cloudflare: " + (data.tunnel || "-");
           document.getElementById("local-url").textContent = "🏠 Wi-Fi Lokal: " + (data.local_ip || "-");
 
@@ -526,7 +527,8 @@
               slot.style.background = theme.activeBg;
               slot.style.borderColor = theme.activeBorder;
               if (statusEl) {
-                statusEl.textContent = "🟢 Terhubung";
+                const dev = (data.devices && data.devices[p]) ? data.devices[p] : "";
+                statusEl.textContent = dev ? `🟢 Terhubung [${dev}]` : "🟢 Terhubung";
                 statusEl.style.color = "#4ade80";
               }
             } else {
