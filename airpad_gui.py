@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QLabel, QPushButton, QFrame, QTextEdit, QGridLayout, QMessageBox
 )
 from PyQt6.QtWebSockets import QWebSocket
+from PyQt6.QtNetwork import QAbstractSocket
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -113,10 +114,12 @@ class ServerPollWorker(QThread):
         while self.running:
             try:
                 req = Request("http://127.0.0.1:8080/api/status", headers={"User-Agent": "AirPadGUI"})
-                with urlopen(req, timeout=1.5) as res:
+                with urlopen(req, timeout=3.0) as res:
                     if res.status == 200:
                         data = json.loads(res.read().decode())
                         self.status_updated.emit(data)
+                    else:
+                        self.status_updated.emit({"status": "offline"})
             except Exception:
                 # If server not up yet
                 self.status_updated.emit({"status": "offline"})
@@ -171,7 +174,28 @@ class AirPadMainWindow(QMainWindow):
     def setup_websocket(self):
         self.ws = QWebSocket()
         self.ws.textMessageReceived.connect(self.on_ws_message)
-        self.ws.open(QUrl("ws://127.0.0.1:8080/ws/monitor"))
+        self.ws.connected.connect(self.on_ws_connected)
+        self.ws.disconnected.connect(self.on_ws_disconnected)
+        self.ws.errorOccurred.connect(self.on_ws_error)
+        self.ws_timer = QTimer(self)
+        self.ws_timer.setInterval(2500)
+        self.ws_timer.timeout.connect(self.open_ws)
+        self.open_ws()
+
+    def open_ws(self):
+        if self.ws.state() != QAbstractSocket.SocketState.ConnectedState and self.ws.state() != QAbstractSocket.SocketState.ConnectingState:
+            self.ws.open(QUrl("ws://127.0.0.1:8080/ws/monitor"))
+
+    def on_ws_connected(self):
+        self.ws_timer.stop()
+
+    def on_ws_disconnected(self):
+        if not self.ws_timer.isActive():
+            self.ws_timer.start()
+
+    def on_ws_error(self, _):
+        if not self.ws_timer.isActive():
+            self.ws_timer.start()
 
     def init_ui(self):
         central = QWidget()
@@ -523,9 +547,14 @@ class AirPadMainWindow(QMainWindow):
         )
         if reply == QMessageBox.StandardButton.Yes:
             self.log_box.append("Memulai ulang server...")
+            subprocess.run(["pkill", "-f", "server.py"], capture_output=True)
             subprocess.Popen([os.path.join(BASE_DIR, "start.sh")])
 
     def closeEvent(self, event):
+        if hasattr(self, "ws_timer"):
+            self.ws_timer.stop()
+        if hasattr(self, "ws"):
+            self.ws.close()
         self.poll_worker.stop()
         event.accept()
 

@@ -18,6 +18,11 @@ cleanup() {
 
 trap cleanup INT TERM
 
+# Bebaskan port dari proses lama sebelum mulai
+fuser -k "${PORT}/tcp" 2>/dev/null || pkill -f "$SCRIPT_DIR/server.py" 2>/dev/null || true
+pkill -f "cloudflared tunnel.*$PORT" 2>/dev/null || true
+sleep 0.5
+
 echo ">> Menjalankan Web Gamepad Server (Kode: $AIRPAD_CODE)..."
 python3 "$SCRIPT_DIR/server.py" &
 SERVER_PID=$!

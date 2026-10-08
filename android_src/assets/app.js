@@ -159,9 +159,10 @@
 
   // Check URL query parameters (e.g. ?code=1234&server=... or ?download=1)
   const urlParams = new URLSearchParams(window.location.search);
-  const paramCode = urlParams.get("code") || localStorage.getItem("airpad_code") || "";
+  const explicitCodeParam = urlParams.get("code") || "";
   const paramServer = urlParams.get("server") || "";
   const paramDownload = urlParams.has("download") || location.hash === "#download";
+  let paramCode = explicitCodeParam || localStorage.getItem("airpad_code") || "";
 
   if (paramCode) inputCode.value = paramCode;
 
@@ -247,6 +248,19 @@
       return activeServerHost;
     }
 
+    function applyLoadedConfig(cfg) {
+      if (!cfg || !cfg.server) return false;
+      window.liveTunnelHost = cleanHost(cfg.server);
+      saveServer(cfg.server);
+      if (cfg.local_ip) window.lastLocalIp = cleanHost(cfg.local_ip);
+      if (cfg.code && !explicitCodeParam) {
+        inputCode.value = cfg.code;
+        paramCode = cfg.code;
+        localStorage.setItem("airpad_code", cfg.code);
+      }
+      return true;
+    }
+
     // 1. Direct fetch from raw.githubusercontent.com (No API limits, CORS enabled)
     if (isExternalHost) {
       try {
@@ -258,13 +272,7 @@
         clearTimeout(timeoutId);
         if (resRaw.ok) {
           const cfg = await resRaw.json();
-          if (cfg && cfg.server) {
-            window.liveTunnelHost = cleanHost(cfg.server);
-            saveServer(cfg.server);
-            if (cfg.local_ip) window.lastLocalIp = cleanHost(cfg.local_ip);
-            if (cfg.code && !inputCode.value) inputCode.value = cfg.code;
-            return activeServerHost;
-          }
+          if (applyLoadedConfig(cfg)) return activeServerHost;
         }
       } catch (e) {}
 
@@ -278,13 +286,7 @@
         clearTimeout(timeoutId2);
         if (resPages.ok) {
           const cfg = await resPages.json();
-          if (cfg && cfg.server) {
-            window.liveTunnelHost = cleanHost(cfg.server);
-            saveServer(cfg.server);
-            if (cfg.local_ip) window.lastLocalIp = cleanHost(cfg.local_ip);
-            if (cfg.code && !inputCode.value) inputCode.value = cfg.code;
-            return activeServerHost;
-          }
+          if (applyLoadedConfig(cfg)) return activeServerHost;
         }
       } catch (e) {}
 
@@ -297,13 +299,7 @@
             const cleanB64 = data.content.replace(/\s/g, "");
             const decoded = decodeURIComponent(escape(atob(cleanB64)));
             const cfg = JSON.parse(decoded);
-            if (cfg && cfg.server) {
-              window.liveTunnelHost = cleanHost(cfg.server);
-              saveServer(cfg.server);
-              if (cfg.local_ip) window.lastLocalIp = cleanHost(cfg.local_ip);
-              if (cfg.code && !inputCode.value) inputCode.value = cfg.code;
-              return activeServerHost;
-            }
+            if (applyLoadedConfig(cfg)) return activeServerHost;
           }
         }
       } catch (e) {}
@@ -313,13 +309,7 @@
         const res2 = await fetch("./config.json?_t=" + Date.now());
         if (res2.ok) {
           const cfg2 = await res2.json();
-          if (cfg2 && cfg2.server) {
-            window.liveTunnelHost = cleanHost(cfg2.server);
-            saveServer(cfg2.server);
-            if (cfg2.local_ip) window.lastLocalIp = cleanHost(cfg2.local_ip);
-            if (cfg2.code && !inputCode.value) inputCode.value = cfg2.code;
-            return activeServerHost;
-          }
+          if (applyLoadedConfig(cfg2)) return activeServerHost;
         }
       } catch (e) {}
     }
