@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AirPad TV - Control Center</title>
+  <title>AirPad - Server Dashboard</title>
   <link rel="icon" type="image/png" href="app_icon.png">
   <style>
     * {
@@ -14,63 +14,48 @@
     }
 
     body {
-      background: #080a14;
+      background: #090b14;
       color: #f1f5f9;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px 28px;
-      overflow-x: hidden;
+      padding: 24px 16px;
     }
 
     .header-bar {
       width: 100%;
-      max-width: 1100px;
+      max-width: 900px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .brand-group {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
     .brand-logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
     }
 
     .brand-text h1 {
-      font-size: 24px;
-      font-weight: 900;
+      font-size: 20px;
+      font-weight: 800;
       letter-spacing: 0.5px;
       color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .tv-tag {
-      background: rgba(56, 189, 248, 0.2);
-      border: 1px solid #38bdf8;
-      color: #38bdf8;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 5px;
-      letter-spacing: 1px;
     }
 
     .brand-text p {
-      font-size: 13px;
+      font-size: 12px;
       color: #94a3b8;
     }
 
@@ -78,33 +63,33 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(34, 197, 94, 0.12);
-      border: 1px solid rgba(34, 197, 94, 0.35);
-      padding: 8px 18px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 6px 14px;
       border-radius: 20px;
-      font-size: 13px;
-      font-weight: 800;
+      font-size: 12px;
+      font-weight: 700;
       color: #4ade80;
     }
 
     .server-status-pill.offline {
-      background: rgba(239, 68, 68, 0.12);
-      border-color: rgba(239, 68, 68, 0.35);
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
       color: #f87171;
     }
 
     .status-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #22c55e;
-      box-shadow: 0 0 12px #22c55e;
+      box-shadow: 0 0 10px #22c55e;
       animation: pulse 2s infinite;
     }
 
     .server-status-pill.offline .status-dot {
       background: #ef4444;
-      box-shadow: 0 0 12px #ef4444;
+      box-shadow: 0 0 10px #ef4444;
       animation: none;
     }
 
@@ -115,10 +100,16 @@
 
     .dashboard-grid {
       display: grid;
-      grid-template-columns: 1fr 1.1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 24px;
       width: 100%;
-      max-width: 1100px;
+      max-width: 900px;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .card {
@@ -145,14 +136,14 @@
 
     .qr-container {
       background: #ffffff;
-      padding: 18px;
-      border-radius: 18px;
+      padding: 16px;
+      border-radius: 16px;
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 0 35px rgba(56, 189, 248, 0.2);
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.15);
       margin: 0 auto;
-      max-width: 260px;
+      max-width: 240px;
       width: 100%;
     }
 
@@ -160,26 +151,31 @@
       display: flex;
       gap: 8px;
       width: 100%;
+      margin-bottom: 8px;
     }
 
     .qr-tab-btn {
       flex: 1;
-      padding: 10px 12px;
-      border-radius: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       background: rgba(30, 41, 59, 0.6);
       color: #94a3b8;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
     }
 
+    .qr-tab-btn:hover {
+      color: #f1f5f9;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
     .qr-tab-btn.active {
-      background: rgba(56, 189, 248, 0.2);
+      background: rgba(56, 189, 248, 0.15);
       border-color: #38bdf8;
       color: #38bdf8;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
     }
 
     .qr-container img {
@@ -190,27 +186,27 @@
 
     .code-hero {
       text-align: center;
-      background: rgba(0, 0, 0, 0.45);
-      border: 1.5px solid rgba(56, 189, 248, 0.35);
+      background: rgba(0, 0, 0, 0.4);
+      border: 1.5px solid rgba(56, 189, 248, 0.3);
       border-radius: 14px;
       padding: 16px;
     }
 
     .code-hero-label {
-      font-size: 12px;
-      font-weight: 800;
+      font-size: 11px;
+      font-weight: 700;
       color: #94a3b8;
-      letter-spacing: 1.2px;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .code-hero-val {
-      font-size: 44px;
+      font-size: 40px;
       font-weight: 900;
       letter-spacing: 12px;
       color: #38bdf8;
-      text-shadow: 0 0 24px rgba(56, 189, 248, 0.6);
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
     }
 
     .url-row {
@@ -238,6 +234,24 @@
       color: #94a3b8;
     }
 
+    .btn-copy {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover {
+      background: rgba(56, 189, 248, 0.3);
+      color: #fff;
+    }
+
     .players-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -247,32 +261,32 @@
     .player-slot {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       background: rgba(15, 23, 42, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 12px;
-      padding: 12px 14px;
+      padding: 10px 12px;
       transition: all 0.3s;
     }
 
     .player-badge {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 900;
       color: #fff;
       padding: 4px 8px;
       border-radius: 6px;
       text-align: center;
-      min-width: 32px;
+      min-width: 28px;
     }
 
     .player-slot.active {
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
     }
 
     .slot-info {
       display: flex;
-      flex-direction: column;
-      gap: 2px;
+      align-items: center;
+      gap: 12px;
     }
 
     .slot-name {
@@ -287,7 +301,7 @@
 
     .player-slot.active .slot-status {
       color: #4ade80;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .log-card {
@@ -321,19 +335,6 @@
     .log-entry.active {
       color: #38bdf8;
     }
-
-    .tv-remote-hint {
-      margin-top: 18px;
-      font-size: 12px;
-      color: #64748b;
-      text-align: center;
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 10px;
-      padding: 8px 16px;
-      width: 100%;
-      max-width: 1100px;
-    }
   </style>
 </head>
 <body>
@@ -341,50 +342,60 @@
     <div class="brand-group">
       <img src="app_icon.png" alt="AirPad" class="brand-logo">
       <div class="brand-text">
-        <h1>AirPad <span class="tv-tag">TV EDITION</span></h1>
-        <p>Virtual Gamepad Control Center • Layar Mabar Bersama</p>
+        <h1>AirPad Control Center</h1>
+        <p>Virtual Mobile Gamepad Server</p>
       </div>
     </div>
     <div class="server-status-pill" id="server-status-pill">
       <span class="status-dot"></span>
-      <span id="server-status-text">MENYAMBUNGKAN...</span>
+      <span id="server-status-text">ONLINE</span>
     </div>
   </div>
 
   <div class="dashboard-grid">
     <!-- Left Column: QR Code & Pairing -->
     <div class="card">
-      <div class="card-title">📷 SCAN QR DARI HP UNTUK KONEK</div>
+      <div class="card-title">📷 SCAN UNTUK KONEK LANGSUNG</div>
       <div class="qr-tabs">
-        <button id="tab-cloud" class="qr-tab-btn active" onclick="setQrMode('cloud')">🌐 Cloudflare (Publik)</button>
+        <button id="tab-cloud" class="qr-tab-btn active" onclick="setQrMode('cloud')">🌐 Cloudflare</button>
         <button id="tab-local" class="qr-tab-btn" onclick="setQrMode('local')">🏠 Wi-Fi Lokal</button>
         <button id="tab-apk" class="qr-tab-btn" onclick="setQrMode('apk')">📥 Unduh APK</button>
       </div>
       <div class="qr-container">
-        <img id="qr-img" src="qr_connect.png" alt="QR Code" onerror="this.src='qr_connect.png'">
+        <img id="qr-img" src="/api/qr?mode=cloud" alt="QR Code" onerror="this.src='qr_connect.png'">
       </div>
-      <p id="qr-hint-text" style="font-size: 13px; color: #94a3b8; text-align: center;">
+      <p id="qr-hint-text" style="font-size: 12px; color: #94a3b8; text-align: center;">
         Buka aplikasi <strong>AirPad</strong> di HP lalu tap <strong>[SCAN QR PC]</strong>
       </p>
 
       <div class="code-hero">
-        <div class="code-hero-label">KODE PAIRING 4-DIGIT</div>
+        <div class="code-hero-label">KODE PAIRING STIK</div>
         <div id="code-val" class="code-hero-val">----</div>
       </div>
 
       <div class="url-row">
         <div class="url-item">
           <span id="tunnel-url">🌐 Cloudflare: Loading...</span>
+          <button class="btn-copy" onclick="copyText('tunnel-url')">Salin</button>
         </div>
         <div class="url-item">
           <span id="local-url">🏠 Wi-Fi Lokal: Loading...</span>
+          <button class="btn-copy" onclick="copyText('local-url')">Salin</button>
+        </div>
+        <div class="url-item">
+          <span id="apk-url">📥 APK HP: AirPad.apk (77 KB)</span>
+          <button class="btn-copy" onclick="copyDirect('https://nzadev.github.io/airpad/AirPad.apk')">Salin</button>
+        </div>
+        <div class="url-item">
+          <span id="tv-apk-url">📺 APK TV: AirPad-TV.apk (33 KB)</span>
+          <button class="btn-copy" onclick="copyDirect('https://nzadev.github.io/airpad/AirPad-TV.apk')">Salin</button>
         </div>
       </div>
     </div>
 
     <!-- Right Column: Live Players & Activity -->
     <div class="card">
-      <div class="card-title">🎮 STIK PEMAIN TERHUBUNG (MAX 8)</div>
+      <div class="card-title">🎮 STIK TERHUBUNG (MAX 8)</div>
       <div id="players-grid" class="players-grid"></div>
 
       <div class="log-card">
@@ -396,85 +407,30 @@
     </div>
   </div>
 
-  <div class="tv-remote-hint">
-    📺 <strong>Navigasi Remote TV Coocaa</strong>: Tekan tombol arah [⬅ KIRI / KANAN ➡] untuk ganti mode QR &nbsp;•&nbsp; Tekan [OK / ENTER] untuk Refresh &nbsp;•&nbsp; Tekan [BACK] untuk keluar
-  </div>
-
   <script>
     let currentQrMode = 'cloud';
-    const QR_MODES = ['cloud', 'local', 'apk'];
-    let targetHost = "legacy-diff-vip-shades.trycloudflare.com";
-    let targetHttpProto = 'https:';
-    let targetWsProto = 'wss:';
+    let targetHost = (location.host.includes("github.io") || location.protocol === "file:")
+      ? "legacy-diff-vip-shades.trycloudflare.com"
+      : (location.host || "legacy-diff-vip-shades.trycloudflare.com");
+    let targetHttpProto = (location.protocol === 'https:' || location.host.includes("github.io")) ? 'https:' : 'http:';
+    let targetWsProto = (location.protocol === 'https:' || location.host.includes("github.io")) ? 'wss:' : 'ws:';
     let monitorWs = null;
     let wsReconnectTimeout = null;
 
-    const PLAYER_THEMES = {
-      1: { color: "#38bdf8", activeBg: "rgba(56, 189, 248, 0.22)", activeBorder: "#38bdf8", badgeBg: "#0284c7" },
-      2: { color: "#f87171", activeBg: "rgba(248, 113, 113, 0.22)", activeBorder: "#f87171", badgeBg: "#dc2626" },
-      3: { color: "#4ade80", activeBg: "rgba(74, 222, 128, 0.22)", activeBorder: "#4ade80", badgeBg: "#16a34a" },
-      4: { color: "#facc15", activeBg: "rgba(250, 204, 21, 0.22)", activeBorder: "#facc15", badgeBg: "#ca8a04" },
-      5: { color: "#c084fc", activeBg: "rgba(192, 132, 252, 0.22)", activeBorder: "#c084fc", badgeBg: "#9333ea" },
-      6: { color: "#fb923c", activeBg: "rgba(251, 146, 60, 0.22)", activeBorder: "#fb923c", badgeBg: "#ea580c" },
-      7: { color: "#2dd4bf", activeBg: "rgba(45, 212, 191, 0.22)", activeBorder: "#2dd4bf", badgeBg: "#0d9488" },
-      8: { color: "#f472b6", activeBg: "rgba(244, 114, 182, 0.22)", activeBorder: "#f472b6", badgeBg: "#db2777" }
-    };
-
-    function ensurePlayerSlot(p) {
-      let slot = document.getElementById(`player-slot-${p}`);
-      if (!slot) {
-        const grid = document.getElementById("players-grid");
-        slot = document.createElement("div");
-        slot.className = "player-slot";
-        slot.id = `player-slot-${p}`;
-        const theme = PLAYER_THEMES[p] || PLAYER_THEMES[1];
-        slot.innerHTML = `
-          <div class="player-badge" style="background: ${theme.badgeBg}">P${p}</div>
-          <div class="slot-info">
-            <span class="slot-name" style="color: ${theme.color}">PLAYER ${p}</span>
-            <span class="slot-status" id="p${p}-status">Menunggu HP...</span>
-          </div>
-        `;
-        grid.appendChild(slot);
-      }
-      return slot;
-    }
-
-    // Default build P1-P4
-    for (let i = 1; i <= 4; i++) ensurePlayerSlot(i);
-
     async function detectRemoteHost() {
-      // 1. Try local config.json file in assets
-      try {
-        const lres = await fetch("config.json?_t=" + Date.now());
-        if (lres.ok) {
-          const lcfg = await lres.json();
-          if (lcfg && lcfg.server) {
-            targetHost = lcfg.server;
-            targetHttpProto = "https:";
-            targetWsProto = "wss:";
-            if (lcfg.code) {
-              document.getElementById("code-val").textContent = lcfg.code;
+      if (location.host.includes("github.io") || location.protocol === "file:") {
+        try {
+          const res = await fetch("https://raw.githubusercontent.com/nzadev/airpad/main/config.json?_t=" + Date.now());
+          if (res.ok) {
+            const cfg = await res.json();
+            if (cfg && cfg.server) {
+              targetHost = cfg.server;
+              targetHttpProto = "https:";
+              targetWsProto = "wss:";
             }
           }
-        }
-      } catch (e) {}
-
-      // 2. Try fetching fresh config from GitHub raw
-      try {
-        const res = await fetch("https://raw.githubusercontent.com/nzadev/airpad/main/config.json?_t=" + Date.now());
-        if (res.ok) {
-          const cfg = await res.json();
-          if (cfg && cfg.server) {
-            targetHost = cfg.server;
-            targetHttpProto = "https:";
-            targetWsProto = "wss:";
-            if (cfg.code) {
-              document.getElementById("code-val").textContent = cfg.code;
-            }
-          }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
     }
 
     function setQrMode(mode) {
@@ -495,33 +451,58 @@
       qrImg.src = `${base}/api/qr?mode=${currentQrMode}&_t=${Date.now()}`;
     }
 
-    function tvNavigate(direction) {
-      let idx = QR_MODES.indexOf(currentQrMode);
-      if (direction === 'left') {
-        idx = (idx - 1 + QR_MODES.length) % QR_MODES.length;
-        setQrMode(QR_MODES[idx]);
-      } else if (direction === 'right') {
-        idx = (idx + 1) % QR_MODES.length;
-        setQrMode(QR_MODES[idx]);
-      } else if (direction === 'select') {
-        refreshStatus();
-        addLog("Refreshed status via TV Remote");
-      }
+    function copyText(elemId) {
+      const text = document.getElementById(elemId).textContent.replace(/^[^:]+:\s*/, "");
+      navigator.clipboard.writeText(text);
+      alert("Tersalin: " + text);
     }
-    window.tvNavigate = tvNavigate;
 
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') tvNavigate('left');
-      else if (e.key === 'ArrowRight') tvNavigate('right');
-      else if (e.key === 'Enter' || e.key === ' ') tvNavigate('select');
-    });
+    function copyDirect(text) {
+      navigator.clipboard.writeText(text);
+      alert("Tersalin ke clipboard: " + text);
+    }
+
+    const PLAYER_THEMES = {
+      1: { color: "#38bdf8", badge: "#0284c7", activeBorder: "#38bdf8", activeBg: "rgba(14, 165, 233, 0.2)" },
+      2: { color: "#f87171", badge: "#dc2626", activeBorder: "#f87171", activeBg: "rgba(239, 68, 68, 0.2)" },
+      3: { color: "#4ade80", badge: "#16a34a", activeBorder: "#4ade80", activeBg: "rgba(34, 197, 94, 0.2)" },
+      4: { color: "#facc15", badge: "#ca8a04", activeBorder: "#facc15", activeBg: "rgba(234, 179, 8, 0.2)" },
+      5: { color: "#c084fc", badge: "#9333ea", activeBorder: "#c084fc", activeBg: "rgba(168, 85, 247, 0.2)" },
+      6: { color: "#fb923c", badge: "#ea580c", activeBorder: "#fb923c", activeBg: "rgba(249, 115, 22, 0.2)" },
+      7: { color: "#2dd4bf", badge: "#0d9488", activeBorder: "#2dd4bf", activeBg: "rgba(20, 184, 166, 0.2)" },
+      8: { color: "#f472b6", badge: "#db2777", activeBorder: "#f472b6", activeBg: "rgba(236, 72, 153, 0.2)" }
+    };
+
+    function ensurePlayerSlot(p) {
+      let slot = document.getElementById(`player-${p}`);
+      if (!slot) {
+        const grid = document.getElementById("players-grid");
+        const theme = PLAYER_THEMES[p] || PLAYER_THEMES[1];
+        slot = document.createElement("div");
+        slot.id = `player-${p}`;
+        slot.className = "player-slot";
+        slot.innerHTML = `
+          <div class="player-badge" style="background: ${theme.badge}">P${p}</div>
+          <div style="flex: 1; overflow: hidden;">
+            <div class="slot-name" style="color: ${theme.color}; font-size: 12px;">PLAYER ${p}</div>
+            <div class="slot-status" id="p${p}-status" style="font-size: 10px; color: #64748b;">Menunggu HP...</div>
+          </div>
+        `;
+        grid.appendChild(slot);
+      }
+      return slot;
+    }
+
+    for (let i = 1; i <= 4; i++) {
+      ensurePlayerSlot(i);
+    }
 
     async function refreshStatus() {
       const statusPill = document.getElementById("server-status-pill");
       const statusText = document.getElementById("server-status-text");
-
       try {
-        const res = await fetch(`${targetHttpProto}//${targetHost}/api/status?_t=${Date.now()}`, { cache: "no-store" });
+        const url = `${targetHttpProto}//${targetHost}/api/status?_t=${Date.now()}`;
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           if (statusPill) statusPill.classList.remove("offline");
@@ -626,7 +607,6 @@
     async function init() {
       await detectRemoteHost();
       refreshStatus();
-      setQrMode('cloud');
       setInterval(refreshStatus, 2500);
       connectMonitorWs();
     }
