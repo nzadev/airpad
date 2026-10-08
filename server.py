@@ -304,8 +304,16 @@ async def qr_handler(request):
     except Exception as e:
         return web.Response(text=f"QR error: {e}", status=500)
 
+@web.middleware
+async def no_cache_middleware(request, handler):
+    response = await handler(request)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 async def init_app():
-    app = web.Application()
+    app = web.Application(middlewares=[no_cache_middleware])
     app.router.add_get("/", index_handler)
     app.router.add_get("/download", download_apk_handler)
     app.router.add_get("/AirPad.apk", download_apk_handler)
