@@ -409,9 +409,11 @@
 
   <script>
     let currentQrMode = 'cloud';
-    let targetHost = location.host;
-    let targetHttpProto = location.protocol === 'https:' ? 'https:' : 'http:';
-    let targetWsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    let targetHost = (location.host.includes("github.io") || location.protocol === "file:")
+      ? "legacy-diff-vip-shades.trycloudflare.com"
+      : (location.host || "legacy-diff-vip-shades.trycloudflare.com");
+    let targetHttpProto = (location.protocol === 'https:' || location.host.includes("github.io")) ? 'https:' : 'http:';
+    let targetWsProto = (location.protocol === 'https:' || location.host.includes("github.io")) ? 'wss:' : 'ws:';
     let monitorWs = null;
     let wsReconnectTimeout = null;
 

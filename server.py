@@ -348,15 +348,38 @@ async def qr_handler(request):
         return web.Response(text=f"QR error: {e}", status=500)
 
 @web.middleware
+async def cors_middleware(request, handler):
+    if request.method == "OPTIONS":
+        return web.Response(
+            status=204,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS, HEAD",
+                "Access-Control-Allow-Headers": "*",
+            }
+        )
+    try:
+        response = await handler(request)
+    except web.HTTPException as ex:
+        response = ex
+
+    if not isinstance(response, web.WebSocketResponse):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, HEAD"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
+@web.middleware
 async def no_cache_middleware(request, handler):
     response = await handler(request)
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
+    if not isinstance(response, web.WebSocketResponse):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     return response
 
 async def init_app():
-    app = web.Application(middlewares=[no_cache_middleware])
+    app = web.Application(middlewares=[cors_middleware, no_cache_middleware])
     app.router.add_get("/", index_handler)
     app.router.add_get("/download", download_apk_handler)
     app.router.add_get("/AirPad.apk", download_apk_handler)

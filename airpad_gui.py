@@ -111,33 +111,20 @@ class ServerPollWorker(QThread):
     def __init__(self):
         super().__init__()
         self.running = True
-        self.check_tunnel_counter = 0
-        self.last_tunnel_ok = True
 
     def run(self):
         while self.running:
             try:
                 req = Request("http://127.0.0.1:8080/api/status", headers={"User-Agent": "AirPadGUI"})
-                with urlopen(req, timeout=3.0) as res:
+                with urlopen(req, timeout=1.5) as res:
                     if res.status == 200:
                         data = json.loads(res.read().decode())
-                        tunnel = data.get("tunnel", "")
-                        self.check_tunnel_counter += 1
-                        if tunnel and (self.check_tunnel_counter % 3 == 0):
-                            try:
-                                treq = Request(f"https://{tunnel}/api/status", headers={"User-Agent": "AirPadGUI"})
-                                with urlopen(treq, timeout=2.5) as tres:
-                                    self.last_tunnel_ok = (tres.status == 200)
-                            except Exception:
-                                self.last_tunnel_ok = False
-                        data["tunnel_ok"] = self.last_tunnel_ok
                         self.status_updated.emit(data)
                     else:
                         self.status_updated.emit({"status": "offline"})
             except Exception:
-                # If server not up yet
                 self.status_updated.emit({"status": "offline"})
-            time.sleep(1.8)
+            time.sleep(1.5)
 
     def stop(self):
         self.running = False
@@ -507,17 +494,12 @@ class AirPadMainWindow(QMainWindow):
             changed = True
 
         tunnel = data.get("tunnel", "")
-        tunnel_ok = data.get("tunnel_ok", True)
         if tunnel != self.current_tunnel:
             self.current_tunnel = tunnel
             changed = True
 
         if self.current_tunnel:
-            if tunnel_ok:
-                self.lbl_tunnel.setText("🌐 Tunnel: " + self.current_tunnel)
-            else:
-                self.lbl_tunnel.setText("🌐 Tunnel: ⚠️ Reconnecting... (" + self.current_tunnel + ")")
-                self.ensure_tunnel()
+            self.lbl_tunnel.setText("🌐 Tunnel: " + self.current_tunnel)
         else:
             self.lbl_tunnel.setText("🌐 Tunnel: Menghubungkan...")
 
