@@ -337,9 +337,19 @@ class AirPadMainWindow(QMainWindow):
         row_apk.addWidget(self.lbl_apk, 1)
         row_apk.addWidget(btn_copy_apk)
 
+        row_tv = QHBoxLayout()
+        self.lbl_tv = QLabel("📺 APK TV: AirPad-TV.apk (33 KB)")
+        self.lbl_tv.setStyleSheet("font-size: 11px; color: #94a3b8;")
+        btn_copy_tv = QPushButton("Salin")
+        btn_copy_tv.setProperty("class", "btn-secondary")
+        btn_copy_tv.clicked.connect(self.copy_tv_apk)
+        row_tv.addWidget(self.lbl_tv, 1)
+        row_tv.addWidget(btn_copy_tv)
+
         urls_layout.addLayout(row_tunnel)
         urls_layout.addLayout(row_local)
         urls_layout.addLayout(row_apk)
+        urls_layout.addLayout(row_tv)
         card_left_layout.addLayout(urls_layout)
 
         grid_layout.addWidget(card_left, 1)
@@ -560,7 +570,12 @@ class AirPadMainWindow(QMainWindow):
     def copy_apk(self):
         url = "https://nzadev.github.io/airpad/AirPad.apk"
         QApplication.clipboard().setText(url)
-        QMessageBox.information(self, "Tersalin", f"Link Download APK berhasil disalin ke clipboard:\n{url}")
+        QMessageBox.information(self, "Tersalin", f"Link Download APK HP berhasil disalin ke clipboard:\n{url}")
+
+    def copy_tv_apk(self):
+        url = "https://nzadev.github.io/airpad/AirPad-TV.apk"
+        QApplication.clipboard().setText(url)
+        QMessageBox.information(self, "Tersalin", f"Link Download APK Android TV berhasil disalin ke clipboard:\n{url}")
 
     def open_dashboard(self):
         subprocess.Popen(["xdg-open", "http://127.0.0.1:8080/dashboard"])

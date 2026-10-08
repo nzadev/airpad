@@ -313,6 +313,17 @@ async def download_apk_handler(request):
         })
     return web.Response(text="APK file not found", status=404)
 
+async def download_tv_apk_handler(request):
+    apk_file = os.path.join(os.path.dirname(__file__), "static", "AirPad-TV.apk")
+    if not os.path.exists(apk_file):
+        apk_file = os.path.join(os.path.dirname(__file__), "AirPad-TV.apk")
+    if os.path.exists(apk_file):
+        return web.FileResponse(apk_file, headers={
+            "Content-Disposition": 'attachment; filename="AirPad-TV.apk"',
+            "Content-Type": "application/vnd.android.package-archive"
+        })
+    return web.Response(text="TV APK file not found", status=404)
+
 async def qr_handler(request):
     mode = request.query.get("mode", "cloud")
     tunnel, local_ip = get_server_metadata()
@@ -350,6 +361,9 @@ async def init_app():
     app.router.add_get("/download", download_apk_handler)
     app.router.add_get("/AirPad.apk", download_apk_handler)
     app.router.add_get("/airpad.apk", download_apk_handler)
+    app.router.add_get("/download-tv", download_tv_apk_handler)
+    app.router.add_get("/AirPad-TV.apk", download_tv_apk_handler)
+    app.router.add_get("/airpad-tv.apk", download_tv_apk_handler)
     app.router.add_get("/dashboard", dashboard_handler)
     app.router.add_get("/api/status", status_handler)
     app.router.add_get("/api/qr", qr_handler)
