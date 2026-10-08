@@ -1633,43 +1633,6 @@ body, html {
   }
 }
 
-/* Fullscreen Restore Floating HUD */
-.fullscreen-restore-hud {
-  position: fixed;
-  top: 44px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, rgba(30, 58, 138, 0.92), rgba(14, 116, 144, 0.92));
-  border: 1px solid rgba(56, 189, 248, 0.5);
-  color: #ffffff;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55), 0 0 12px rgba(56, 189, 248, 0.25);
-  cursor: pointer;
-  z-index: 500;
-  animation: pulseRestoreHud 2s infinite ease-in-out;
-  touch-action: manipulation;
-  user-select: none;
-}
-
-.fullscreen-restore-hud .hud-icon {
-  font-size: 14px;
-}
-
-.fullscreen-restore-hud.hidden {
-  display: none !important;
-}
-
-@keyframes pulseRestoreHud {
-  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.95; }
-  50% { transform: translateX(-50%) scale(1.04); opacity: 1; }
-}
-
 /* Rotate Device Guard (Shown when device is held in portrait while on Gamepad) */
 .rotate-device-overlay {
   display: none;

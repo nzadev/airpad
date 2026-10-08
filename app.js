@@ -30,23 +30,24 @@
   let tempLayout = {};
   let currentScale = 1.0;
 
+  // Detect if running inside the Native Android APK
+  const isNativeApp = Boolean(
+    location.protocol === "file:" ||
+    window.location.href.startsWith("file:") ||
+    navigator.userAgent.includes("AirPadNative") ||
+    window.AirPadBridge ||
+    (window.Android && window.Android.isNative) ||
+    document.documentElement.classList.contains("is-native-app")
+  );
+
+  const isExternalHost = isNativeApp || location.origin.startsWith("file:") || location.host.includes("github.io");
+
   // Auth & Navigation Elements
   const authModal = document.getElementById("auth-modal");
   const modalCloseBtn = document.getElementById("modal-close-btn");
-  const fullscreenRestoreHud = document.getElementById("fullscreen-restore-hud");
 
   function isFullscreenActive() {
     return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
-  }
-
-  function updateFullscreenRestoreHud() {
-    if (!fullscreenRestoreHud) return;
-    const isGamepadActive = authModal && authModal.classList.contains("hidden");
-    if (isGamepadActive && !isFullscreenActive()) {
-      fullscreenRestoreHud.classList.remove("hidden");
-    } else {
-      fullscreenRestoreHud.classList.add("hidden");
-    }
   }
 
   let authModalOpenTime = Date.now();
@@ -59,7 +60,6 @@
     if (screen.orientation && screen.orientation.unlock) {
       screen.orientation.unlock().catch(() => {});
     }
-    updateFullscreenRestoreHud();
     setTimeout(() => {
       if (authModal) authModal.style.pointerEvents = "";
     }, 350);
@@ -69,7 +69,6 @@
     if (!authModal) return;
     authModal.classList.add("hidden");
     document.body.classList.remove("auth-active");
-    updateFullscreenRestoreHud();
   }
   const modalTabs = document.getElementById("modal-tabs");
   const tabBtnConnect = document.getElementById("tab-btn-connect");
@@ -96,16 +95,6 @@
   const qrCanvas = document.getElementById("qr-canvas");
   const scannerStatus = document.getElementById("scanner-status");
 
-  // Detect if running inside the Native Android APK
-  const isNativeApp = Boolean(
-    location.protocol === "file:" ||
-    window.location.href.startsWith("file:") ||
-    navigator.userAgent.includes("AirPadNative") ||
-    window.AirPadBridge ||
-    (window.Android && window.Android.isNative)
-  );
-
-  const isExternalHost = isNativeApp || location.origin.startsWith("file:") || location.host.includes("github.io");
   let activeServerHost = "";
   window.lastLocalIp = "";
   window.liveTunnelHost = "";
@@ -379,7 +368,6 @@
       }
     } catch (e) {}
     if (document.activeElement) document.activeElement.blur();
-    updateFullscreenRestoreHud();
   }
 
   async function exitFullscreen() {
@@ -395,11 +383,9 @@
         screen.orientation.unlock();
       }
     } catch (e) {}
-    updateFullscreenRestoreHud();
   }
 
   function onFullscreenChanged() {
-    updateFullscreenRestoreHud();
     if (!isFullscreenActive()) {
       if (authModal && !authModal.classList.contains("hidden")) {
         if (screen.orientation && screen.orientation.unlock) {
@@ -415,23 +401,6 @@
 
   document.addEventListener("fullscreenchange", onFullscreenChanged);
   document.addEventListener("webkitfullscreenchange", onFullscreenChanged);
-
-  if (fullscreenRestoreHud) {
-    addTapListener(fullscreenRestoreHud, (e) => {
-      if (e && e.stopPropagation) e.stopPropagation();
-      enterFullscreen();
-    });
-  }
-
-  const gamepadContainerEl = document.getElementById("gamepad-container");
-  if (gamepadContainerEl) {
-    gamepadContainerEl.addEventListener("pointerdown", () => {
-      const isGamepadActive = authModal && authModal.classList.contains("hidden");
-      if (isGamepadActive && !isFullscreenActive()) {
-        enterFullscreen();
-      }
-    }, { capture: true, passive: true });
-  }
 
   window.addEventListener("orientationchange", () => {
     if (document.activeElement && document.activeElement.tagName === "INPUT") {
