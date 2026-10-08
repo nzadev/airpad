@@ -9,9 +9,13 @@
   const pingText = document.getElementById("ping-text");
   const btnOpenSettings = document.getElementById("btn-open-settings");
   const btnDisconnect = document.getElementById("btn-disconnect");
-  const btnToggleScreen = document.getElementById("btn-toggle-screen");
-  const btnCropMode = document.getElementById("btn-crop-mode");
-  const cropBtnText = document.getElementById("crop-btn-text");
+  const streamFloatingHud = document.getElementById("stream-floating-hud");
+  const btnHudCrop = document.getElementById("btn-hud-crop");
+  const hudCropLabel = document.getElementById("hud-crop-label");
+  const btnHudExitStream = document.getElementById("btn-hud-exit-stream");
+  const toggleScreenStream = document.getElementById("toggle-screen-stream");
+  const itemCropSelect = document.getElementById("item-crop-select");
+  const selectCropMode = document.getElementById("select-crop-mode");
   const gameStreamContainer = document.getElementById("game-stream-container");
   const gameStreamImg = document.getElementById("game-stream-img");
   const gamepadContainer = document.getElementById("gamepad-container");
@@ -455,7 +459,7 @@
       }
     }
     if (isStreamActive) {
-      toggleGameStream();
+      stopGameStream();
     }
     if (ws) {
       try {
@@ -622,16 +626,21 @@
 
   // --- REMOTE SCREEN STREAMER & SPLIT-SCREEN CROP ENGINE ---
   let isStreamActive = false;
-  const CROP_MODES = [
-    { id: "p2_v", label: "P2 Kanan" },
-    { id: "p2_h", label: "P2 Bawah" },
-    { id: "p1_v", label: "P1 Kiri" },
-    { id: "p1_h", label: "P1 Atas" },
-    { id: "full", label: "Full Layar" }
-  ];
-  let cropModeIndex = 0; // default: p2_v (Player 2 Vertical split)
+  const CROP_MODES_MAP = {
+    "p2_v": "📱 P2 (Kanan)",
+    "p1_v": "📱 P1 (Kiri)",
+    "p2_h": "📱 P2 (Bawah)",
+    "p1_h": "📱 P1 (Atas)",
+    "p1_q": "👥 P1 (Kiri Atas)",
+    "p2_q": "👥 P2 (Kanan Atas)",
+    "p3_q": "👥 P3 (Kiri Bawah)",
+    "p4_q": "👥 P4 (Kanan Bawah)",
+    "full": "🖥️ Full Layar"
+  };
+  const CROP_KEYS = Object.keys(CROP_MODES_MAP);
+  let currentCropKey = "p2_v";
 
-  function getStreamUrl() {
+  function getStreamUrl(cropKey) {
     let base = "";
     if (activeServerHost) {
       if (activeServerHost.startsWith("http://") || activeServerHost.startsWith("https://")) {
@@ -643,45 +652,80 @@
     } else {
       base = location.origin.startsWith("file:") ? "http://127.0.0.1:8080" : location.origin;
     }
-    const cropId = CROP_MODES[cropModeIndex].id;
+    const cropId = cropKey || currentCropKey;
     return `${base}/api/stream?crop=${cropId}&_t=${Date.now()}`;
   }
 
+  function startGameStream() {
+    isStreamActive = true;
+    if (gameStreamContainer) gameStreamContainer.classList.remove("hidden");
+    if (streamFloatingHud) streamFloatingHud.classList.remove("hidden");
+    if (gamepadContainer) gamepadContainer.classList.add("streaming-active");
+    if (toggleScreenStream) toggleScreenStream.checked = true;
+    if (itemCropSelect) itemCropSelect.style.display = "flex";
+    if (selectCropMode) selectCropMode.value = currentCropKey;
+    if (hudCropLabel) hudCropLabel.textContent = CROP_MODES_MAP[currentCropKey];
+    if (gameStreamImg) {
+      gameStreamImg.src = getStreamUrl(currentCropKey);
+    }
+    haptic(35);
+  }
+
+  function stopGameStream() {
+    isStreamActive = false;
+    if (gameStreamContainer) gameStreamContainer.classList.add("hidden");
+    if (streamFloatingHud) streamFloatingHud.classList.add("hidden");
+    if (gamepadContainer) gamepadContainer.classList.remove("streaming-active");
+    if (toggleScreenStream) toggleScreenStream.checked = false;
+    if (itemCropSelect) itemCropSelect.style.display = "none";
+    if (gameStreamImg) {
+      gameStreamImg.src = "";
+    }
+    haptic(20);
+  }
+
   function toggleGameStream() {
-    isStreamActive = !isStreamActive;
     if (isStreamActive) {
-      if (gameStreamContainer) gameStreamContainer.classList.remove("hidden");
-      if (btnCropMode) btnCropMode.classList.remove("hidden");
-      if (btnToggleScreen) btnToggleScreen.classList.add("active-stream");
-      if (gamepadContainer) gamepadContainer.classList.add("streaming-active");
-      if (gameStreamImg) {
-        gameStreamImg.src = getStreamUrl();
-      }
-      haptic(35);
+      stopGameStream();
     } else {
-      if (gameStreamContainer) gameStreamContainer.classList.add("hidden");
-      if (btnCropMode) btnCropMode.classList.add("hidden");
-      if (btnToggleScreen) btnToggleScreen.classList.remove("active-stream");
-      if (gamepadContainer) gamepadContainer.classList.remove("streaming-active");
-      if (gameStreamImg) {
-        gameStreamImg.src = "";
-      }
-      haptic(20);
+      startGameStream();
     }
   }
 
   function cycleCropMode() {
-    cropModeIndex = (cropModeIndex + 1) % CROP_MODES.length;
-    const current = CROP_MODES[cropModeIndex];
-    if (cropBtnText) cropBtnText.textContent = current.label;
+    const nextIdx = (CROP_KEYS.indexOf(currentCropKey) + 1) % CROP_KEYS.length;
+    currentCropKey = CROP_KEYS[nextIdx];
+    if (hudCropLabel) hudCropLabel.textContent = CROP_MODES_MAP[currentCropKey];
+    if (selectCropMode) selectCropMode.value = currentCropKey;
     if (isStreamActive && gameStreamImg) {
-      gameStreamImg.src = getStreamUrl();
+      gameStreamImg.src = getStreamUrl(currentCropKey);
     }
     haptic(25);
   }
 
-  if (btnToggleScreen) addTapListener(btnToggleScreen, toggleGameStream);
-  if (btnCropMode) addTapListener(btnCropMode, cycleCropMode);
+  if (btnHudCrop) addTapListener(btnHudCrop, cycleCropMode);
+  if (btnHudExitStream) addTapListener(btnHudExitStream, stopGameStream);
+
+  if (toggleScreenStream) {
+    toggleScreenStream.addEventListener("change", () => {
+      if (toggleScreenStream.checked) {
+        startGameStream();
+      } else {
+        stopGameStream();
+      }
+    });
+  }
+
+  if (selectCropMode) {
+    selectCropMode.addEventListener("change", () => {
+      currentCropKey = selectCropMode.value;
+      if (hudCropLabel) hudCropLabel.textContent = CROP_MODES_MAP[currentCropKey];
+      if (isStreamActive && gameStreamImg) {
+        gameStreamImg.src = getStreamUrl(currentCropKey);
+      }
+      haptic(20);
+    });
+  }
 
   if (toggleVibrate) {
     toggleVibrate.addEventListener("change", () => {

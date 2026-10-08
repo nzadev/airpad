@@ -389,18 +389,32 @@ async def stream_handler(request):
         fps_val = 30
 
     w, h = get_screen_resolution()
+    half_w = w // 2
+    half_h = h // 2
     if crop == "p2_v":
-        v_size = f"{w // 2}x{h}"
-        inp = f":0.0+{w // 2},0"
+        v_size = f"{half_w}x{h}"
+        inp = f":0.0+{half_w},0"
     elif crop == "p1_v":
-        v_size = f"{w // 2}x{h}"
+        v_size = f"{half_w}x{h}"
         inp = ":0.0+0,0"
     elif crop == "p2_h":
-        v_size = f"{w}x{h // 2}"
-        inp = f":0.0+0,{h // 2}"
+        v_size = f"{w}x{half_h}"
+        inp = f":0.0+0,{half_h}"
     elif crop == "p1_h":
-        v_size = f"{w}x{h // 2}"
+        v_size = f"{w}x{half_h}"
         inp = ":0.0+0,0"
+    elif crop == "p1_q":
+        v_size = f"{half_w}x{half_h}"
+        inp = ":0.0+0,0"
+    elif crop == "p2_q":
+        v_size = f"{half_w}x{half_h}"
+        inp = f":0.0+{half_w},0"
+    elif crop == "p3_q":
+        v_size = f"{half_w}x{half_h}"
+        inp = f":0.0+0,{half_h}"
+    elif crop == "p4_q":
+        v_size = f"{half_w}x{half_h}"
+        inp = f":0.0+{half_w},{half_h}"
     else:
         v_size = f"{w}x{h}"
         inp = ":0.0+0,0"

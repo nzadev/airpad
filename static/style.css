@@ -2068,7 +2068,7 @@ html.is-native-app .open-app-banner {
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: 0 !important;
   background: #000;
   overflow: hidden;
   display: flex;
@@ -2091,57 +2091,151 @@ html.is-native-app .open-app-banner {
   image-rendering: crisp-edges;
 }
 
+/* Ensure all controls are layered firmly in front of the stream video */
+.top-nav {
+  position: relative;
+  z-index: 50 !important;
+}
+
+.shoulders-bar {
+  position: relative;
+  z-index: 40 !important;
+}
+
+.controls-grid {
+  position: relative;
+  z-index: 40 !important;
+}
+
+.control-zone {
+  position: relative;
+  z-index: 45 !important;
+}
+
+.dpad-wrapper,
+.action-wrapper,
+.joystick-container {
+  position: relative;
+  z-index: 50 !important;
+}
+
 /* Translucent Gamepad Overlay when streaming is active */
 #gamepad-container.streaming-active {
-  background: transparent !important;
+  background: #000 !important;
 }
 
 #gamepad-container.streaming-active .dpad-btn {
-  background: rgba(15, 23, 42, 0.4) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+  background: rgba(15, 23, 42, 0.72) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
+  color: #f8fafc !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6) !important;
 }
 
 #gamepad-container.streaming-active .action-btn {
-  background: rgba(15, 23, 42, 0.45) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6) !important;
 }
 
 #gamepad-container.streaming-active .stick-base {
-  background: rgba(15, 23, 42, 0.35) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: rgba(15, 23, 42, 0.65) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 #gamepad-container.streaming-active .stick-knob {
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.6) 0%, rgba(14, 165, 233, 0.4) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
+  background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.7) !important;
 }
 
 #gamepad-container.streaming-active .btn-shoulder,
-#gamepad-container.streaming-active .btn-trigger {
-  background: rgba(15, 23, 42, 0.4) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+#gamepad-container.streaming-active .btn-pill,
+#gamepad-container.streaming-active .btn-ps {
+  background: rgba(15, 23, 42, 0.72) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+  color: #f8fafc !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 #gamepad-container.streaming-active .top-nav {
-  background: rgba(15, 23, 42, 0.5) !important;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(15, 23, 42, 0.75) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.icon-btn-pill.active-stream {
-  background: rgba(16, 185, 129, 0.3) !important;
-  border-color: #10b981 !important;
-  color: #a7f3d0 !important;
+/* Floating Stream Quick-Bar (Docked at top center) */
+.stream-floating-hud {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 99999 !important;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1.5px solid rgba(56, 189, 248, 0.6);
+  border-radius: 30px;
+  padding: 4px 10px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.stream-floating-hud.hidden {
+  display: none !important;
+}
+
+.hud-pill-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f8fafc;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  touch-action: manipulation !important;
+  transition: all 0.15s ease;
+}
+
+.hud-pill-btn:active {
+  transform: scale(0.95);
+  background: rgba(56, 189, 248, 0.35);
+}
+
+.hud-pill-btn.exit-btn {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.8);
+  color: #fca5a5;
+  font-weight: 800;
+}
+
+.hud-pill-btn.exit-btn:active {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.settings-select-input {
+  background: #1c1f30;
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  color: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+  max-width: 180px;
 }
 
 
