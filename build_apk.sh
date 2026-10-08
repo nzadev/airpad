@@ -51,7 +51,7 @@ echo ">> 2. Linking resources & APK shell..."
 echo ">> 3. Compiling Java sources..."
 javac -d "$BUILD_DIR/classes" \
     -cp "$PLATFORM/android.jar" \
-    "$SRC_DIR/src/com/nzadev/airpad/MainActivity.java" \
+    $(find "$SRC_DIR/src" -name "*.java") \
     $(find "$BUILD_DIR/gen" -name "*.java" 2>/dev/null || true)
 
 echo ">> 4. Converting to Dalvik DEX (d8)..."

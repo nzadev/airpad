@@ -14,6 +14,9 @@ OUT_APK="$SCRIPT_DIR/AirPad-TV.apk"
 echo ">> 0. Syncing live config & QR to TV assets..."
 cp "$SCRIPT_DIR/config.json" "$SRC_DIR/assets/config.json"
 cp "$SCRIPT_DIR/qr_connect.png" "$SRC_DIR/assets/qr_connect.png"
+if [[ -f "$SCRIPT_DIR/qr_tv_connect.png" ]]; then
+    cp "$SCRIPT_DIR/qr_tv_connect.png" "$SRC_DIR/assets/qr_tv_connect.png"
+fi
 cp "$SCRIPT_DIR/app_icon.png" "$SRC_DIR/assets/app_icon.png"
 
 rm -rf "$BUILD_DIR"

@@ -1930,6 +1930,32 @@ body.edit-mode-active .edit-walls-container {
   transform: scale(0.98);
 }
 
+/* Bluetooth TV Mode Button */
+.btn-bluetooth-tv {
+  width: 100%;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  color: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  touch-action: manipulation !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+}
+
+.btn-bluetooth-tv:active {
+  background: #0369a1;
+  transform: scale(0.98);
+}
+
 /* Close Settings Bottom Button */
 .btn-close-settings-bottom {
   width: 100%;

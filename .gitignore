@@ -1,3 +1,4 @@
 android_build/
+android_tv_build/
 *.idsig
 __pycache__/

@@ -85,6 +85,7 @@
   const btnQuickTunnel = document.getElementById("btn-quick-tunnel");
   const btnQuickLocal = document.getElementById("btn-quick-local");
   const btnSubmitCode = document.getElementById("btn-submit-code");
+  const btnBluetoothTv = document.getElementById("btn-bluetooth-tv");
   const authError = document.getElementById("auth-error");
 
   // In-App QR Scanner Elements
@@ -99,10 +100,36 @@
   window.lastLocalIp = "";
   window.liveTunnelHost = "";
 
+  // Bluetooth TV Mode State & Bridge Callback
+  window.isBluetoothModeActive = false;
+  window.isBluetoothConnected = false;
+
+  window.onBluetoothStateChanged = function(status, connected) {
+    console.log("[AirPad BT]", status, connected);
+    window.isBluetoothConnected = Boolean(connected);
+    if (playerText) {
+      playerText.textContent = connected ? "🟢 TV Terhubung (BT)" : (status || "📺 Mode Bluetooth TV");
+    }
+    if (playerBadge) {
+      if (connected) {
+        playerBadge.classList.add("connected");
+        playerBadge.style.background = "rgba(16, 185, 129, 0.25)";
+        playerBadge.style.borderColor = "#10b981";
+      } else {
+        playerBadge.style.background = "rgba(2, 132, 199, 0.25)";
+        playerBadge.style.borderColor = "#38bdf8";
+      }
+    }
+    if (pingText) {
+      pingText.textContent = connected ? "0 ms (BT)" : "BT-HID";
+    }
+  };
+
   // Adjust UI if inside Native App
   if (isNativeApp) {
     document.body.classList.add("is-native-app");
     document.documentElement.classList.add("is-native-app");
+    if (btnBluetoothTv) btnBluetoothTv.style.display = "flex";
     if (modalTabs) modalTabs.style.display = "none";
     if (btnOpenDownloadModal) btnOpenDownloadModal.style.display = "none";
     const recBanner = document.querySelector(".apk-recommend-banner");
@@ -413,6 +440,14 @@
   function disconnectDevice() {
     isExplicitDisconnect = true;
     exitFullscreen();
+    if (window.isBluetoothModeActive) {
+      window.isBluetoothModeActive = false;
+      if (window.AirPadBridge && window.AirPadBridge.stopBluetoothMode) {
+        try {
+          window.AirPadBridge.stopBluetoothMode();
+        } catch (e) {}
+      }
+    }
     if (ws) {
       try {
         send(["b", "SELECT", 0]);
@@ -524,6 +559,48 @@
       hideAuthModal();
       enterFullscreen();
       haptic(25);
+    });
+  }
+
+  if (btnBluetoothTv) {
+    addTapListener(btnBluetoothTv, () => {
+      if (Date.now() - authModalOpenTime < 350) return;
+      if (document.activeElement) document.activeElement.blur();
+
+      if (window.AirPadBridge && window.AirPadBridge.startBluetoothMode) {
+        window.isBluetoothModeActive = true;
+        window.AirPadBridge.startBluetoothMode();
+
+        hideAuthModal();
+        enterFullscreen();
+        haptic(35);
+
+        if (playerBadge) {
+          playerBadge.classList.add("connected");
+          playerBadge.style.background = "rgba(2, 132, 199, 0.25)";
+          playerBadge.style.borderColor = "#38bdf8";
+        }
+        if (playerText) {
+          playerText.textContent = "📺 Mode Bluetooth TV (Coocaa)";
+        }
+        if (pingText) {
+          pingText.textContent = "BT-HID";
+        }
+      } else {
+        if (authError) {
+          authError.textContent = "Mode Bluetooth Gamepad TV hanya untuk aplikasi AirPad Android (.apk). Download APK di tab sebelah!";
+          authError.style.color = "#38bdf8";
+        }
+        switchTab("download");
+        haptic(30);
+      }
+    });
+  }
+
+  if (btnDisconnect) {
+    addTapListener(btnDisconnect, (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      disconnectDevice();
     });
   }
 
@@ -1129,6 +1206,21 @@
   });
 
   function send(data) {
+    if (window.isBluetoothModeActive && window.AirPadBridge) {
+      try {
+        const type = data[0];
+        if (type === "b") {
+          window.AirPadBridge.sendButton(data[1], Number(data[2]));
+        } else if (type === "a") {
+          window.AirPadBridge.sendAxis(data[1], Number(data[2]), Number(data[3]));
+        } else if (type === "t") {
+          window.AirPadBridge.sendTrigger(data[1], Number(data[2]));
+        }
+      } catch (e) {
+        console.error("BT send error:", e);
+      }
+      return;
+    }
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(data));
     }

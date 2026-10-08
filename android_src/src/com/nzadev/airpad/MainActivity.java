@@ -2,6 +2,7 @@ package com.nzadev.airpad;
 
 import android.Manifest;
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -10,15 +11,20 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends Activity {
     private WebView webView;
     private PermissionRequest pendingPermissionRequest;
+    private BluetoothGamepadManager btGamepadManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +35,19 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         hideSystemUI();
+
+        btGamepadManager = new BluetoothGamepadManager(this, (status, connected) -> {
+            if (webView != null) {
+                final String safeStatus = status.replace("'", "\\'");
+                webView.post(() -> {
+                    webView.evaluateJavascript(
+                        "if (typeof window.onBluetoothStateChanged === 'function') window.onBluetoothStateChanged('"
+                        + safeStatus + "', " + connected + ");",
+                        null
+                    );
+                });
+            }
+        });
 
         webView = new WebView(this);
         WebSettings settings = webView.getSettings();
@@ -44,14 +63,9 @@ public class MainActivity extends Activity {
         }
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " AirPadNative/2.2");
+        settings.setUserAgentString(settings.getUserAgentString() + " AirPadNative/2.3");
 
-        webView.addJavascriptInterface(new Object() {
-            @android.webkit.JavascriptInterface
-            public boolean isNative() {
-                return true;
-            }
-        }, "AirPadBridge");
+        webView.addJavascriptInterface(new AirPadBridgeInterface(), "AirPadBridge");
 
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient() {
@@ -72,6 +86,99 @@ public class MainActivity extends Activity {
 
         loadAppUrl(getIntent());
         setContentView(webView);
+    }
+
+    private class AirPadBridgeInterface {
+        @JavascriptInterface
+        public boolean isNative() {
+            return true;
+        }
+
+        @JavascriptInterface
+        public boolean isBluetoothSupported() {
+            return btGamepadManager != null && btGamepadManager.isSupported();
+        }
+
+        @JavascriptInterface
+        public boolean isBluetoothConnected() {
+            return btGamepadManager != null && btGamepadManager.isConnected();
+        }
+
+        @JavascriptInterface
+        public void startBluetoothMode() {
+            runOnUiThread(() -> checkAndStartBluetooth());
+        }
+
+        @JavascriptInterface
+        public void stopBluetoothMode() {
+            runOnUiThread(() -> {
+                if (btGamepadManager != null) {
+                    btGamepadManager.stop();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void makeBluetoothDiscoverable() {
+            runOnUiThread(() -> promptDiscoverable());
+        }
+
+        @JavascriptInterface
+        public void sendButton(String btn, int val) {
+            if (btGamepadManager != null) {
+                if ("UP".equalsIgnoreCase(btn) || "DOWN".equalsIgnoreCase(btn) ||
+                    "LEFT".equalsIgnoreCase(btn) || "RIGHT".equalsIgnoreCase(btn)) {
+                    btGamepadManager.setDpad(btn, val == 1);
+                } else {
+                    btGamepadManager.setButton(btn, val == 1);
+                }
+            }
+        }
+
+        @JavascriptInterface
+        public void sendAxis(String stick, float x, float y) {
+            if (btGamepadManager != null) {
+                btGamepadManager.setStick(stick, x, y);
+            }
+        }
+
+        @JavascriptInterface
+        public void sendTrigger(String trig, float val) {
+            if (btGamepadManager != null) {
+                btGamepadManager.setTrigger(trig, val);
+            }
+        }
+    }
+
+    private void checkAndStartBluetooth() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            List<String> needed = new ArrayList<>();
+            if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.BLUETOOTH_CONNECT);
+            }
+            if (checkSelfPermission(Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.BLUETOOTH_ADVERTISE);
+            }
+            if (!needed.isEmpty()) {
+                requestPermissions(needed.toArray(new String[0]), 102);
+                return;
+            }
+        }
+
+        promptDiscoverable();
+        if (btGamepadManager != null) {
+            btGamepadManager.start();
+        }
+    }
+
+    private void promptDiscoverable() {
+        try {
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            startActivity(discoverableIntent);
+        } catch (Exception e) {
+            // Ignore if unable to prompt
+        }
     }
 
     private void hideSystemUI() {
@@ -126,7 +233,26 @@ public class MainActivity extends Activity {
                     req.deny();
                 }
             });
+        } else if (requestCode == 102) {
+            boolean allGranted = true;
+            for (int r : grantResults) {
+                if (r != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+            if (allGranted) {
+                checkAndStartBluetooth();
+            }
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (btGamepadManager != null) {
+            btGamepadManager.stop();
+        }
+        super.onDestroy();
     }
 
     @Override
