@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import json
 import os
+import re
 import subprocess
 import sys
+import threading
 import time
 from urllib.request import urlopen, Request
 
@@ -109,6 +111,8 @@ class ServerPollWorker(QThread):
     def __init__(self):
         super().__init__()
         self.running = True
+        self.check_tunnel_counter = 0
+        self.last_tunnel_ok = True
 
     def run(self):
         while self.running:
@@ -117,6 +121,16 @@ class ServerPollWorker(QThread):
                 with urlopen(req, timeout=3.0) as res:
                     if res.status == 200:
                         data = json.loads(res.read().decode())
+                        tunnel = data.get("tunnel", "")
+                        self.check_tunnel_counter += 1
+                        if tunnel and (self.check_tunnel_counter % 3 == 0):
+                            try:
+                                treq = Request(f"https://{tunnel}/api/status", headers={"User-Agent": "AirPadGUI"})
+                                with urlopen(treq, timeout=2.5) as tres:
+                                    self.last_tunnel_ok = (tres.status == 200)
+                            except Exception:
+                                self.last_tunnel_ok = False
+                        data["tunnel_ok"] = self.last_tunnel_ok
                         self.status_updated.emit(data)
                     else:
                         self.status_updated.emit({"status": "offline"})
@@ -483,10 +497,19 @@ class AirPadMainWindow(QMainWindow):
             changed = True
 
         tunnel = data.get("tunnel", "")
+        tunnel_ok = data.get("tunnel_ok", True)
         if tunnel != self.current_tunnel:
             self.current_tunnel = tunnel
-            self.lbl_tunnel.setText("🌐 Tunnel: " + (tunnel if tunnel else "Menghubungkan..."))
             changed = True
+
+        if self.current_tunnel:
+            if tunnel_ok:
+                self.lbl_tunnel.setText("🌐 Tunnel: " + self.current_tunnel)
+            else:
+                self.lbl_tunnel.setText("🌐 Tunnel: ⚠️ Reconnecting... (" + self.current_tunnel + ")")
+                self.ensure_tunnel()
+        else:
+            self.lbl_tunnel.setText("🌐 Tunnel: Menghubungkan...")
 
         local_ip = data.get("local_ip", "")
         if local_ip != self.current_local_ip:
@@ -544,13 +567,74 @@ class AirPadMainWindow(QMainWindow):
 
     def ensure_backend_running(self):
         try:
-            req = urllib.request.Request("http://127.0.0.1:8080/api/status", headers={"User-Agent": "AirPadControlCenter/1.0"})
-            with urllib.request.urlopen(req, timeout=1.0) as res:
+            req = Request("http://127.0.0.1:8080/api/status", headers={"User-Agent": "AirPadGUI"})
+            with urlopen(req, timeout=1.0) as res:
                 if res.status == 200:
+                    self.ensure_tunnel()
                     return
         except Exception:
             pass
         self.start_backend(force_new_code=False)
+
+    def ensure_tunnel(self):
+        cf_running = subprocess.run(["pgrep", "-f", "cloudflared.*8080"], capture_output=True).returncode == 0
+        if not cf_running:
+            self.log_box.append("Menghubungkan Cloudflare Tunnel...")
+            threading.Thread(target=self._launch_and_sync_tunnel, daemon=True).start()
+
+    def _launch_and_sync_tunnel(self):
+        log_file = "/tmp/cloudflared_webgamepad.log"
+        try:
+            if os.path.exists(log_file):
+                os.remove(log_file)
+        except Exception:
+            pass
+
+        with open(log_file, "w") as out:
+            subprocess.Popen(
+                ["cloudflared", "tunnel", "--protocol", "http2", "--url", "http://127.0.0.1:8080"],
+                stdout=out, stderr=out, start_new_session=True
+            )
+
+        new_host = ""
+        for _ in range(40):
+            time.sleep(0.5)
+            if os.path.exists(log_file):
+                try:
+                    with open(log_file, "r") as f:
+                        content = f.read()
+                        match = re.search(r"https://([a-zA-Z0-9.-]+\.trycloudflare\.com)", content)
+                        if match:
+                            new_host = match.group(1)
+                            break
+                except Exception:
+                    pass
+
+        if new_host:
+            self.apply_new_tunnel_host(new_host)
+
+    def apply_new_tunnel_host(self, host):
+        cfg_path = os.path.join(BASE_DIR, "config.json")
+        code = self.current_code if (self.current_code and self.current_code != "----") else "6815"
+        local_ip = self.current_local_ip or "10.150.55.154:8080"
+        data = {"server": host, "local_ip": local_ip, "code": code}
+        try:
+            with open(cfg_path, "w") as f:
+                json.dump(data, f)
+            for sub in ["static", os.path.join("android_src", "assets")]:
+                target = os.path.join(BASE_DIR, sub, "config.json")
+                if os.path.exists(os.path.dirname(target)):
+                    with open(target, "w") as f:
+                        json.dump(data, f)
+            github_url = f"https://nzadev.github.io/airpad/?code={code}&server={host}"
+            subprocess.run(["qrencode", "-o", os.path.join(BASE_DIR, "static", "qr_connect.png"), "-s", "8", "-m", "2", github_url], capture_output=True)
+            subprocess.run(["cp", os.path.join(BASE_DIR, "static", "qr_connect.png"), os.path.join(BASE_DIR, "qr_connect.png")], capture_output=True)
+            subprocess.run(["git", "add", "config.json", "static/config.json", "android_src/assets/config.json", "static/qr_connect.png", "qr_connect.png"], cwd=BASE_DIR, capture_output=True)
+            subprocess.run(["git", "commit", "-m", f"chore: sync live tunnel host to {host}"], cwd=BASE_DIR, capture_output=True)
+            subprocess.Popen(["git", "push", "origin", "main"], cwd=BASE_DIR)
+            self.log_box.append(f"🌐 Tunnel baru aktif & disinkronkan: {host}")
+        except Exception as err:
+            self.log_box.append(f"⚠️ Gagal sinkronisasi tunnel: {err}")
 
     def start_backend(self, force_new_code=False):
         self.log_box.append("Menjalankan backend server AirPad...")
@@ -559,10 +643,7 @@ class AirPadMainWindow(QMainWindow):
         env["AIRPAD_CODE"] = code
         subprocess.run(["pkill", "-f", "server.py"], capture_output=True)
         subprocess.Popen([sys.executable, os.path.join(BASE_DIR, "server.py")], env=env, start_new_session=True)
-
-        cf_running = subprocess.run(["pgrep", "-f", "cloudflared.*8080"], capture_output=True).returncode == 0
-        if not cf_running:
-            subprocess.Popen(["cloudflared", "tunnel", "--protocol", "http2", "--url", "http://127.0.0.1:8080"], start_new_session=True)
+        self.ensure_tunnel()
 
     def restart_server(self):
         is_online = ("ONLINE" in self.badge_status.text())
