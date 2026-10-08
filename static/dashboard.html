@@ -362,7 +362,7 @@
         <button id="tab-apk" class="qr-tab-btn" onclick="setQrMode('apk')">📥 Unduh APK</button>
       </div>
       <div class="qr-container">
-        <img id="qr-img" src="/api/qr?mode=cloud" alt="QR Code" onerror="this.src='qr_connect.png'">
+        <img id="qr-img" src="qr_connect.png" alt="QR Code">
       </div>
       <p id="qr-hint-text" style="font-size: 12px; color: #94a3b8; text-align: center;">
         Buka aplikasi <strong>AirPad</strong> di HP lalu tap <strong>[SCAN QR PC]</strong>
@@ -370,16 +370,16 @@
 
       <div class="code-hero">
         <div class="code-hero-label">KODE PAIRING STIK</div>
-        <div id="code-val" class="code-hero-val">----</div>
+        <div id="code-val" class="code-hero-val">6815</div>
       </div>
 
       <div class="url-row">
         <div class="url-item">
-          <span id="tunnel-url">🌐 Cloudflare: Loading...</span>
+          <span id="tunnel-url">🌐 Cloudflare: legacy-diff-vip-shades.trycloudflare.com</span>
           <button class="btn-copy" onclick="copyText('tunnel-url')">Salin</button>
         </div>
         <div class="url-item">
-          <span id="local-url">🏠 Wi-Fi Lokal: Loading...</span>
+          <span id="local-url">🏠 Wi-Fi Lokal: 10.150.55.154:8080</span>
           <button class="btn-copy" onclick="copyText('local-url')">Salin</button>
         </div>
         <div class="url-item">
@@ -448,6 +448,9 @@
 
       const qrImg = document.getElementById('qr-img');
       const base = `${targetHttpProto}//${targetHost}`;
+      qrImg.onerror = () => {
+        if (mode === 'cloud') qrImg.src = 'qr_connect.png';
+      };
       qrImg.src = `${base}/api/qr?mode=${currentQrMode}&_t=${Date.now()}`;
     }
 
@@ -607,6 +610,7 @@
     async function init() {
       await detectRemoteHost();
       refreshStatus();
+      setQrMode('cloud');
       setInterval(refreshStatus, 2500);
       connectMonitorWs();
     }
