@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtWebSockets import QWebSocket
 from PyQt6.QtNetwork import QAbstractSocket
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 STYLE_SHEET = """
 QMainWindow {
@@ -148,6 +148,7 @@ class AirPadMainWindow(QMainWindow):
 
         self.init_ui()
         self.load_initial_config()
+        self.ensure_backend_running()
 
         self.poll_worker = ServerPollWorker()
         self.poll_worker.status_updated.connect(self.on_status_updated)
@@ -365,12 +366,12 @@ class AirPadMainWindow(QMainWindow):
         btn_open_browser.setProperty("class", "btn-secondary")
         btn_open_browser.clicked.connect(self.open_dashboard)
 
-        btn_restart = QPushButton("🔄 Restart Server")
-        btn_restart.setProperty("class", "btn-primary")
-        btn_restart.clicked.connect(self.restart_server)
+        self.btn_restart = QPushButton("🔄 Restart Server")
+        self.btn_restart.setProperty("class", "btn-primary")
+        self.btn_restart.clicked.connect(self.restart_server)
 
         btn_box.addWidget(btn_open_browser)
-        btn_box.addWidget(btn_restart)
+        btn_box.addWidget(self.btn_restart)
         card_right_layout.addLayout(btn_box)
 
         grid_layout.addWidget(card_right, 1)
@@ -467,10 +468,12 @@ class AirPadMainWindow(QMainWindow):
         if data.get("status") == "offline":
             self.badge_status.setText("● SERVER OFFLINE")
             self.badge_status.setStyleSheet("background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; font-weight: 800; font-size: 12px; border-radius: 14px; padding: 6px 14px;")
+            self.btn_restart.setText("▶ Nyalakan Server")
             return
 
         self.badge_status.setText("● SERVER ONLINE")
         self.badge_status.setStyleSheet("background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; font-weight: 800; font-size: 12px; border-radius: 14px; padding: 6px 14px;")
+        self.btn_restart.setText("🔄 Restart Server")
 
         code = str(data.get("code", "----"))
         changed = False
@@ -539,16 +542,41 @@ class AirPadMainWindow(QMainWindow):
     def open_dashboard(self):
         subprocess.Popen(["xdg-open", "http://127.0.0.1:8080/dashboard"])
 
+    def ensure_backend_running(self):
+        try:
+            req = urllib.request.Request("http://127.0.0.1:8080/api/status", headers={"User-Agent": "AirPadControlCenter/1.0"})
+            with urllib.request.urlopen(req, timeout=1.0) as res:
+                if res.status == 200:
+                    return
+        except Exception:
+            pass
+        self.start_backend(force_new_code=False)
+
+    def start_backend(self, force_new_code=False):
+        self.log_box.append("Menjalankan backend server AirPad...")
+        code = self.current_code if (not force_new_code and self.current_code and self.current_code != "----") else "6815"
+        env = os.environ.copy()
+        env["AIRPAD_CODE"] = code
+        subprocess.run(["pkill", "-f", "server.py"], capture_output=True)
+        subprocess.Popen([sys.executable, os.path.join(BASE_DIR, "server.py")], env=env, start_new_session=True)
+
+        cf_running = subprocess.run(["pgrep", "-f", "cloudflared.*8080"], capture_output=True).returncode == 0
+        if not cf_running:
+            subprocess.Popen(["cloudflared", "tunnel", "--protocol", "http2", "--url", "http://127.0.0.1:8080"], start_new_session=True)
+
     def restart_server(self):
-        reply = QMessageBox.question(
-            self, "Restart Server",
-            "Mulai ulang server dan buat kode pairing baru?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if reply == QMessageBox.StandardButton.Yes:
-            self.log_box.append("Memulai ulang server...")
-            subprocess.run(["pkill", "-f", "server.py"], capture_output=True)
-            subprocess.Popen([os.path.join(BASE_DIR, "start.sh")])
+        is_online = ("ONLINE" in self.badge_status.text())
+        if is_online:
+            reply = QMessageBox.question(
+                self, "Restart Server",
+                "Mulai ulang server dan muat ulang koneksi?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
+        self.log_box.append("Memulai ulang server AirPad...")
+        self.start_backend(force_new_code=False)
 
     def closeEvent(self, event):
         if hasattr(self, "ws_timer"):

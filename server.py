@@ -52,21 +52,34 @@ BTN_MAP = {
     "RIGHT": e.BTN_DPAD_RIGHT
 }
 
-PAIR_CODE = os.environ.get("AIRPAD_CODE", "1234")
 monitors = set()
 
-def get_server_metadata():
+def get_config_data():
     cfg_file = os.path.join(os.path.dirname(__file__), "config.json")
-    tunnel = ""
-    local_ip = ""
     if os.path.exists(cfg_file):
         try:
             with open(cfg_file, "r") as f:
-                c = json.load(f)
-                tunnel = c.get("server", "")
-                local_ip = c.get("local_ip", "")
+                return json.load(f)
         except Exception:
             pass
+    return {}
+
+def get_pair_code():
+    env_code = os.environ.get("AIRPAD_CODE")
+    if env_code and env_code.strip():
+        return env_code.strip()
+    cfg = get_config_data()
+    cfg_code = cfg.get("code")
+    if cfg_code and str(cfg_code).strip():
+        return str(cfg_code).strip()
+    return "6815"
+
+PAIR_CODE = get_pair_code()
+
+def get_server_metadata():
+    cfg = get_config_data()
+    tunnel = cfg.get("server", "")
+    local_ip = cfg.get("local_ip", "")
     return tunnel, local_ip
 
 async def broadcast_monitor(data):
@@ -119,7 +132,7 @@ class PlayerManager:
 player_manager = PlayerManager()
 
 async def ws_handler(request):
-    ws = web.WebSocketResponse(heartbeat=15.0)
+    ws = web.WebSocketResponse(heartbeat=25.0)
     await ws.prepare(request)
 
     slot = None
@@ -127,13 +140,24 @@ async def ws_handler(request):
 
     try:
         # Step 1: Wait for authentication message
-        auth_msg = await ws.receive()
+        try:
+            auth_msg = await ws.receive()
+        except Exception:
+            return ws
+
         if auth_msg.type != web.WSMsgType.TEXT:
             await ws.close()
             return ws
 
-        auth_data = json.loads(auth_msg.data)
-        if auth_data.get("type") != "auth" or str(auth_data.get("code")).strip() != str(PAIR_CODE).strip():
+        try:
+            auth_data = json.loads(auth_msg.data)
+        except Exception:
+            await ws.close()
+            return ws
+
+        input_code = str(auth_data.get("code", "")).strip()
+        expected_code = get_pair_code()
+        if auth_data.get("type") != "auth" or (input_code != expected_code and input_code != str(PAIR_CODE).strip()):
             await ws.send_str(json.dumps({"type": "error", "message": "Kode pairing salah!"}))
             await ws.close()
             return ws
@@ -220,7 +244,14 @@ async def ws_handler(request):
                     logger.debug(f"Input error: {err}")
 
             elif msg.type == web.WSMsgType.ERROR:
-                logger.error(f"WS error: {ws.exception()}")
+                logger.debug(f"WS error: {ws.exception()}")
+                break
+            elif msg.type in (web.WSMsgType.CLOSE, web.WSMsgType.CLOSING, web.WSMsgType.CLOSED):
+                break
+    except (asyncio.CancelledError, ConnectionResetError):
+        pass
+    except Exception as err:
+        logger.debug(f"WS session error: {err}")
     finally:
         if slot is not None:
             await player_manager.release(slot)
@@ -246,7 +277,7 @@ async def status_handler(request):
     tunnel, local_ip = get_server_metadata()
     return web.json_response({
         "status": "online",
-        "code": PAIR_CODE,
+        "code": get_pair_code(),
         "players": list(player_manager.players.keys()),
         "tunnel": tunnel,
         "local_ip": local_ip
@@ -259,7 +290,7 @@ async def monitor_handler(request):
     tunnel, local_ip = get_server_metadata()
     await ws.send_str(json.dumps({
         "type": "state",
-        "code": PAIR_CODE,
+        "code": get_pair_code(),
         "players": list(player_manager.players.keys()),
         "tunnel": tunnel,
         "local_ip": local_ip
@@ -285,14 +316,15 @@ async def download_apk_handler(request):
 async def qr_handler(request):
     mode = request.query.get("mode", "cloud")
     tunnel, local_ip = get_server_metadata()
+    code = get_pair_code()
     if mode == "apk":
         target = "https://nzadev.github.io/airpad/AirPad.apk"
     elif mode == "local":
-        target = f"airpad://connect?code={PAIR_CODE}&server={local_ip}"
+        target = f"airpad://connect?code={code}&server={local_ip}"
     elif mode == "web":
-        target = f"https://nzadev.github.io/airpad/?code={PAIR_CODE}&server={tunnel}"
+        target = f"https://nzadev.github.io/airpad/?code={code}&server={tunnel}"
     else:
-        target = f"airpad://connect?code={PAIR_CODE}&server={tunnel}"
+        target = f"airpad://connect?code={code}&server={tunnel}"
 
     try:
         proc = await asyncio.create_subprocess_exec(
